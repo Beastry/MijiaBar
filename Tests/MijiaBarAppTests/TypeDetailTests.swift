@@ -7,14 +7,81 @@ import MijiaCore
     @Test func dedicatedDemoDevicesAndArt() throws {
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
-                                (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater")] {
+                                (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == "h2")
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 23)
+        #expect(ArtGallery.rows.count == 25)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func curtainDemoPositionControlsAndRouting() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d20" })
+        #expect(device.category == .curtain)
+        #expect(device.roomName == L("客厅", "Living room"))
+        #expect(model.powerInfo(device) == nil)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let target = try #require(primarySliderProp(context))
+        #expect(target.name == "target-position" && target.writable)
+        #expect(context.label(target) == L("目标位置", "Target position"))
+        #expect(context.p("current-position")?.writable == false)
+        for (command, value) in [(CurtainCommand.open, 0), (.pause, 1), (.close, 2)] {
+            #expect(command.option(in: context.p("motor-control"))?.value == value)
+        }
+        for (percent, title) in [(100, L("全开", "Open")), (50, "50%"), (0, L("全关", "Closed"))] {
+            state.values["2.1"] = .int(percent)
+            let detail = CurtainDetail(dc: DC(device: device, state: state))
+            #expect(detail.position == Double(percent) / 100)
+            #expect(detail.title == title)
+        }
+        state.values.removeValue(forKey: "2.1")
+        let unknown = CurtainDetail(dc: DC(device: device, state: state))
+        #expect(unknown.position == nil)
+        #expect(unknown.title == L("暂无读数", "No reading"))
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: CurtainDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: CurtainArt.self))
+        #expect(ArtGallery.rows.filter { $0.0 == "curtain-half" }.count == 1)
+    }
+
+    @Test func curtainMissingReadOnlyAndNonstandardMotorValues() {
+        let device = Device(did: "demo", name: "Demo", model: "lumi.curtain.demo", isOnline: true)
+        let empty = DC(device: device, state: DeviceState(values: [:], spec: nil, legacy: false, source: "cloud"))
+        #expect(primarySliderProp(empty) == nil)
+        #expect(CurtainDetail(dc: empty).position == nil)
+        for access in [["read"], ["read", "write"]] {
+            let spec = DeviceSpec.parse(["services": [["iid": 2, "type": "curtain", "properties": [
+                ["iid": 1, "type": "target-position", "format": "uint8", "access": access, "value-range": [0, 10, 1]],
+                ["iid": 2, "type": "motor-control", "format": "uint8", "access": access, "value-list": [
+                    ["value": 7, "description": "Up"], ["value": 9, "description": "Stop"], ["value": 4, "description": "Down"]]]
+            ]]]])
+            let context = DC(device: device, state: DeviceState(values: ["2.1": .int(5)], spec: spec, legacy: false, source: "cloud"))
+            #expect(CurtainDetail(dc: context).position == 0.5)
+            #expect((primarySliderProp(context) != nil) == access.contains("write"))
+            for (command, value) in [(CurtainCommand.open, 7), (.pause, 9), (.close, 4)] {
+                #expect(command.option(in: context.p("motor-control"))?.value == (access.contains("write") ? value : nil))
+                #expect(command.option(in: nil) == nil)
+                #expect(command.option(in: context.p("target-position")) == nil)
+            }
+        }
+    }
+
+    @Test func curtainArtOpeningGeometry() {
+        let closed = CurtainArt(position: 0, tint: .blue)
+        let half = CurtainArt(position: 0.5, tint: .blue)
+        let open = CurtainArt(position: 1, tint: .blue)
+        #expect(closed.panelWidth == 80)
+        #expect(half.panelWidth == (closed.panelWidth + open.panelWidth) / 2)
+        #expect(open.panelWidth == 14)
+        #expect(CurtainArt(position: -1, tint: .blue).opening == 0)
+        #expect(CurtainArt(position: 2, tint: .blue).opening == 1)
     }
 
     @Test func applianceDemoPropertiesAndPower() throws {

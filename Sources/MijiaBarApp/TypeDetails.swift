@@ -15,6 +15,7 @@ struct TypeDetailView: View {
         case .fridge: FridgeDetail(dc: dc)
         case .washer: WasherDetail(dc: dc)
         case .waterHeater: WaterHeaterDetail(dc: dc)
+        case .curtain: CurtainDetail(dc: dc)
         case .light: LightDetail(dc: dc)
         case .plug: PlugDetail(dc: dc)
         case .tv: TVDetail(dc: dc)
@@ -96,7 +97,8 @@ struct DeviceStatusCard: View {
     case .fridge: FridgeArt(on: false, tint: tint)
     case .washer: WasherArt(on: false, busy: false, tint: tint)
     case .waterHeater: WaterHeaterArt(on: false, heating: false, tint: tint)
-    case .other, .curtain: GenericArt(on: false, tint: tint)
+    case .curtain: CurtainArt(position: 0, tint: tint)
+    case .other: GenericArt(on: false, tint: tint)
     case .airPurifier: AirPurifierArt(on: false, level: 0.5, tint: tint)
     }
 }
@@ -380,6 +382,72 @@ struct HumidifierDetail: View {
                 PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "slider.horizontal.3", tint: tint)
                 PropTile(dc: dc, prop: dc.p("fan-level"), title: L("风速", "Fan"), icon: "wind", tint: tint)
                 PropTile(dc: dc, prop: dc.p("physical-controls-locked"), title: L("童锁", "Child lock"), icon: "lock", tint: tint)
+            }
+        }
+    }
+}
+
+enum CurtainCommand: CaseIterable {
+    case open, pause, close
+    var title: String {
+        switch self {
+        case .open: return L("打开", "Open")
+        case .pause: return L("暂停", "Pause")
+        case .close: return L("关闭", "Close")
+        }
+    }
+    var icon: String {
+        switch self {
+        case .open: return "arrow.left.and.right"
+        case .pause: return "pause.fill"
+        case .close: return "arrow.right.and.line.vertical.and.arrow.left"
+        }
+    }
+    func option(in prop: SpecProperty?) -> ValueOption? {
+        guard let prop, prop.writable else { return nil }
+        let names: [String]
+        switch self {
+        case .open: names = ["open", "up"]
+        case .pause: names = ["pause", "stop"]
+        case .close: names = ["close", "down"]
+        }
+        return prop.options?.first { names.contains($0.description.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
+    }
+}
+
+struct CurtainDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var position: Double? { HouseDeviceState.curtainPosition(dc.state) }
+    var title: String {
+        guard let position else { return L("暂无读数", "No reading") }
+        if position == 1 { return L("全开", "Open") }
+        if position == 0 { return L("全关", "Closed") }
+        return "\(Int((position * 100).rounded()))%"
+    }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        let motor = dc.p("motor-control"), target = primarySliderProp(dc)
+        let commands = CurtainCommand.allCases.filter { $0.option(in: motor) != nil }
+        let enabled = device.isOnline && !m.busy.contains(device.did)
+        TypeShell(device: device, tint: tint, isOn: device.isOnline, title: title, subtitle: L("窗帘", "Curtain")) {
+            CurtainArt(position: position ?? 0, tint: tint)
+        } content: {
+            BigValue(value: position.map { "\(Int(($0 * 100).rounded()))" }, unit: "%", caption: L("开合", "Position"), dim: !device.isOnline)
+            HStack(spacing: 8) {
+                ForEach(commands, id: \.self) { command in
+                    if let motor, let option = command.option(in: motor) {
+                        ActionTile(title: command.title, icon: command.icon, tint: tint) {
+                            m.write(device, motor.key, PropValue.int(option.value).coerced(to: motor.format))
+                        }.disabled(!enabled)
+                    }
+                }
+            }
+            if let target {
+                PropSlider(dc: dc, prop: target, colors: [tint.opacity(0.3), tint], enabled: enabled)
+            }
+            if commands.isEmpty && target == nil {
+                Text(L("只读", "Read only")).font(.system(size: Theme.TypeSize.caption)).foregroundStyle(.secondary)
             }
         }
     }

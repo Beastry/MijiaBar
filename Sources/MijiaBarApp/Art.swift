@@ -623,6 +623,44 @@ struct HumidifierArt: View {
     }
 }
 
+struct CurtainArt: View {
+    let position: Double, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var opening: Double { min(1, max(0, position)) }
+    var panelWidth: CGFloat { 80 - 66 * opening }
+    var body: some View {
+        ZStack {
+            Ambient(tint, opening, width: 190, height: 130).position(x: 100, y: 68)
+            RoundedRectangle(cornerRadius: 5).appliance(tint, opening * 0.4)
+                .frame(width: 148, height: 102).position(x: 100, y: 70)
+            RoundedRectangle(cornerRadius: 2)
+                .fill(LinearGradient(colors: [Theme.cool.opacity(0.35), Theme.tile], startPoint: .top, endPoint: .bottom))
+                .frame(width: 134, height: 88).position(x: 100, y: 70)
+            Rectangle().fill(Theme.stroke).frame(width: 3, height: 88).position(x: 100, y: 70)
+            Rectangle().fill(Theme.stroke).frame(width: 134, height: 3).position(x: 100, y: 70)
+            ForEach(0..<2, id: \.self) { side in
+                ZStack {
+                    RoundedRectangle(cornerRadius: 3).fill(Theme.tile)
+                    RoundedRectangle(cornerRadius: 3).fill(tint.opacity(0.3))
+                    HStack(spacing: 0) {
+                        ForEach(0..<5, id: \.self) { _ in
+                            Rectangle().fill(LinearGradient(colors: [tint.opacity(0.35), Theme.tile.opacity(0.5), tint.opacity(0.15)],
+                                                            startPoint: .leading, endPoint: .trailing))
+                        }
+                    }.clipShape(RoundedRectangle(cornerRadius: 3))
+                    RoundedRectangle(cornerRadius: 3).stroke(Theme.stroke, lineWidth: 1)
+                }
+                .frame(width: panelWidth, height: 104)
+                .position(x: side == 0 ? 20 + panelWidth / 2 : 180 - panelWidth / 2, y: 70)
+            }
+            Capsule().fill(aluminum).frame(width: 176, height: 5).position(x: 100, y: 16)
+            Capsule().fill(shellFill).frame(width: 158, height: 5).position(x: 100, y: 124)
+        }
+        .frame(width: 200, height: 136)
+        .animation(reduceMotion ? nil : Motion.smooth, value: opening)
+    }
+}
+
 struct FridgeArt: View {
     let on: Bool, tint: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

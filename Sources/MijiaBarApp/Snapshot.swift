@@ -34,6 +34,7 @@ extension AppModel {
             dev("d17", L("冰箱", "Fridge"), "viomi.fridge.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d18", L("洗衣机", "Washer"), "xiaomi.washer.demo", L("阳台", "Balcony"), home: "h2"),
             dev("d19", L("热水器", "Water heater"), "viomi.waterheater.demo", L("浴室", "Bathroom"), home: "h2"),
+            dev("d20", L("客厅窗帘", "Living room curtain"), "lumi.curtain.demo", L("客厅", "Living room"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -110,6 +111,12 @@ extension AppModel {
             P(2, 1, "on", "bool"), P(2, 2, "target-temperature", "uint8", range: [35, 75, 1], unit: "celsius"),
             P(2, 3, "heating", "bool", ["read"]), P(2, 4, "temperature", "uint8", ["read"], unit: "celsius")])])
         states["d19"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(55), "2.3": .bool(true), "2.4": .int(42)], spec: waterHeater, legacy: false, source: "cloud")
+        let curtain = DeviceSpec(type: "", description: "", services: [S(2, "curtain", [
+            P(2, 1, "current-position", "uint8", ["read"], range: [0, 100, 1], unit: "percentage"),
+            P(2, 2, "target-position", "uint8", range: [0, 100, 1], unit: "percentage"),
+            P(2, 3, "motor-control", "uint8", opts: [ValueOption(value: 0, description: "Open"),
+                ValueOption(value: 1, description: "Pause"), ValueOption(value: 2, description: "Close")])])])
+        states["d20"] = DeviceState(values: ["2.1": .int(100), "2.2": .int(100), "2.3": .int(1)], spec: curtain, legacy: false, source: "cloud")
         for d in devices { if let st = states[d.did], let t = Transport.from(st.source, device: d) { transports[d.did] = t } }
     }
 }
@@ -135,6 +142,8 @@ struct ArtGallery: View {
             ("fridge", AnyView(FridgeArt(on: true, tint: DeviceCategory.fridge.color)), AnyView(FridgeArt(on: false, tint: DeviceCategory.fridge.color))),
             ("washer", AnyView(WasherArt(on: true, busy: true, tint: DeviceCategory.washer.color)), AnyView(WasherArt(on: false, busy: false, tint: DeviceCategory.washer.color))),
             ("water-heater", AnyView(WaterHeaterArt(on: true, heating: true, tint: DeviceCategory.waterHeater.color)), AnyView(WaterHeaterArt(on: false, heating: false, tint: DeviceCategory.waterHeater.color))),
+            ("curtain", AnyView(CurtainArt(position: 1, tint: DeviceCategory.curtain.color)), AnyView(CurtainArt(position: 0, tint: DeviceCategory.curtain.color))),
+            ("curtain-half", AnyView(CurtainArt(position: 0.5, tint: DeviceCategory.curtain.color)), AnyView(CurtainArt(position: 0, tint: DeviceCategory.curtain.color))),
             ("thermo", AnyView(ThermoArt(temp: 25.6, tint: .mint)), AnyView(ThermoArt(temp: nil, tint: .mint))),
             ("motion", AnyView(MotionSensorArt(on: true, tint: .mint)), AnyView(MotionSensorArt(on: false, tint: .mint))),
             ("contact", AnyView(ContactSensorArt(on: true, open: true, tint: .mint)), AnyView(ContactSensorArt(on: false, open: nil, tint: .mint))),
@@ -274,6 +283,13 @@ enum Snapshot {
             m.states["d19"]?.values["2.1"] = .bool(false); render(root, f("water-heater-off"))
             m.states["d19"]?.values["2.1"] = .bool(true)
             m.states["d19"]?.values["2.3"] = .bool(true)
+            m.page = .detail("d20"); render(root, f("curtain"))
+            m.states["d20"]?.values["2.1"] = .int(50)
+            m.states["d20"]?.values["2.2"] = .int(50); render(root, f("curtain-half"))
+            m.states["d20"]?.values["2.1"] = .int(0)
+            m.states["d20"]?.values["2.2"] = .int(0); render(root, f("curtain-closed"))
+            m.states["d20"]?.values["2.1"] = .int(100)
+            m.states["d20"]?.values["2.2"] = .int(100)
             m.page = .detail("d6"); render(root, f("thermo-history"), size: CGSize(width: 360, height: 900))
             m.page = .detail("d12"); render(root, f("contact-history"), size: CGSize(width: 360, height: 640))
             LiveControls.snapshotWatching = true

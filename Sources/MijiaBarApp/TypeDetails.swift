@@ -26,6 +26,7 @@ struct TypeDetailView: View {
         case .purifier: PurifierDetail(dc: dc)
         case .heater, .dehumidifier: ApplianceDetail(dc: dc)
         case .sensor: SensorDetail(dc: dc)
+        case .airPurifier: AirPurifierDetail(dc: dc)
         default: DeviceCardView(device: device, state: state).frame(width: cardWidth)
         }
     }
@@ -356,6 +357,37 @@ struct PurifierDetail: View {
                                ("aqi.medium", minFilter.map { L("滤芯 ", "Filter ") + "\(Int($0))%" })], tint: tint)
             if dc.spec == nil {
                 Text(L("这个型号没有公开的 MIoT 规格，只能显示在线状态", "No public MIoT spec; only online state is available")).font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+        }
+    }
+}
+
+struct AirPurifierDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        let power = m.powerInfo(device), on = power?.isOn ?? false
+        let level = dc.p("fan-level") ?? dc.p("speed-level")
+        let particulate = dc.p("pm2.5-density"), quality = particulate ?? dc.p("air-quality-index")
+        let unit = quality.map { unitText($0) } ?? ""
+        TypeShell(device: device, tint: tint, isOn: on, title: on ? L("运行中", "Running") : L("已关闭", "Off"),
+                  subtitle: joined([L("空气净化器", "Air purifier"), dc.text(dc.p("mode"))]),
+                  powerOn: power?.isOn, onPower: powerHandler(m, device)) {
+            AirPurifierArt(on: on, level: propFraction(level, dc.num(level)), tint: tint)
+        } content: {
+            BigValue(value: dc.num(quality).map { fmt1($0) }, unit: particulate != nil && unit.isEmpty ? "µg/m³" : unit,
+                     caption: particulate != nil ? L("PM2.5", "PM2.5") : L("空气质量指数", "Air quality index"), dim: !on)
+            if let level, level.writable, level.options == nil, level.range != nil {
+                PropSlider(dc: dc, prop: level, colors: [tint.opacity(0.3), tint], enabled: on)
+            }
+            ReadoutRow(items: [("aqi.medium", dc.num(dc.p("filter-life-level")).map { L("滤芯寿命", "Filter life") + " \(Int($0))%" }),
+                               ("humidity.fill", dc.num(dc.p("relative-humidity")).map { L("湿度 ", "Humidity ") + "\(Int($0))%" })], tint: tint)
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "slider.horizontal.3", tint: tint)
+                if let level, level.writable, level.options != nil {
+                    PropTile(dc: dc, prop: level, title: L("风速", "Fan"), icon: "wind", tint: tint)
+                }
             }
         }
     }

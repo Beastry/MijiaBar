@@ -35,6 +35,7 @@ extension AppModel {
             dev("d18", L("洗衣机", "Washer"), "xiaomi.washer.demo", L("阳台", "Balcony"), home: "h2"),
             dev("d19", L("热水器", "Water heater"), "viomi.waterheater.demo", L("浴室", "Bathroom"), home: "h2"),
             dev("d20", L("客厅窗帘", "Living room curtain"), "lumi.curtain.demo", L("客厅", "Living room"), home: "h2"),
+            dev("d21", L("空气净化器", "Air purifier"), "zhimi.airpurifier.demo", L("客厅", "Living room"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -117,6 +118,14 @@ extension AppModel {
             P(2, 3, "motor-control", "uint8", opts: [ValueOption(value: 0, description: "Open"),
                 ValueOption(value: 1, description: "Pause"), ValueOption(value: 2, description: "Close")])])])
         states["d20"] = DeviceState(values: ["2.1": .int(100), "2.2": .int(100), "2.3": .int(1)], spec: curtain, legacy: false, source: "cloud")
+        let airPurifier = DeviceSpec(type: "", description: "", services: [S(2, "air-purifier", [
+            P(2, 1, "on", "bool"),
+            P(2, 2, "fan-level", "uint8", opts: [ValueOption(value: 1, description: "Low"), ValueOption(value: 2, description: "Medium"), ValueOption(value: 3, description: "High")]),
+            P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Sleep"), ValueOption(value: 2, description: "Favorite")]),
+            P(2, 4, "filter-life-level", "uint8", ["read"], range: [0, 100, 1], unit: "percentage")]),
+            S(3, "environment", [P(3, 1, "pm2.5-density", "uint16", ["read"], unit: "µg/m³"),
+                                  P(3, 2, "relative-humidity", "uint8", ["read"], unit: "percentage")])])
+        states["d21"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(2), "2.3": .int(0), "2.4": .int(78), "3.1": .int(12), "3.2": .int(42)], spec: airPurifier, legacy: false, source: "cloud")
         for d in devices { if let st = states[d.did], let t = Transport.from(st.source, device: d) { transports[d.did] = t } }
     }
 }
@@ -149,7 +158,7 @@ struct ArtGallery: View {
             ("contact", AnyView(ContactSensorArt(on: true, open: true, tint: .mint)), AnyView(ContactSensorArt(on: false, open: nil, tint: .mint))),
             ("leak", AnyView(LeakSensorArt(on: true, wet: true, tint: .mint)), AnyView(LeakSensorArt(on: false, wet: nil, tint: .mint))),
             ("doorbell", AnyView(DoorbellArt(on: true, tint: .purple)), AnyView(DoorbellArt(on: false, tint: .purple))),
-            ("air purifier", AnyView(AirPurifierArt(on: true, level: 0.6, tint: .cyan)), AnyView(AirPurifierArt(on: false, level: 0.6, tint: .cyan))),
+            ("air-purifier", AnyView(AirPurifierArt(on: true, level: 0.6, tint: .cyan)), AnyView(AirPurifierArt(on: false, level: 0.6, tint: .cyan))),
             ("generic", AnyView(GenericArt(on: true, tint: .indigo)), AnyView(GenericArt(on: false, tint: .indigo))),
     ] }
     var body: some View {
@@ -290,6 +299,9 @@ enum Snapshot {
             m.states["d20"]?.values["2.2"] = .int(0); render(root, f("curtain-closed"))
             m.states["d20"]?.values["2.1"] = .int(100)
             m.states["d20"]?.values["2.2"] = .int(100)
+            m.page = .detail("d21"); render(root, f("air-purifier"))
+            m.states["d21"]?.values["2.1"] = .bool(false); render(root, f("air-purifier-off"))
+            m.states["d21"]?.values["2.1"] = .bool(true)
             m.page = .detail("d6"); render(root, f("thermo-history"), size: CGSize(width: 360, height: 900))
             m.page = .detail("d12"); render(root, f("contact-history"), size: CGSize(width: 360, height: 640))
             LiveControls.snapshotWatching = true

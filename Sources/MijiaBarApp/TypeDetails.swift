@@ -24,7 +24,8 @@ struct TypeDetailView: View {
         case .printer: PrinterDetail(dc: dc)
         case .kitchen: CookerDetail(dc: dc)
         case .purifier: PurifierDetail(dc: dc)
-        case .heater, .dehumidifier: ApplianceDetail(dc: dc)
+        case .heater: HeaterDetail(dc: dc)
+        case .dehumidifier: DehumidifierDetail(dc: dc)
         case .sensor: SensorDetail(dc: dc)
         case .airPurifier: AirPurifierDetail(dc: dc)
         default: DeviceCardView(device: device, state: state).frame(width: cardWidth)
@@ -85,7 +86,8 @@ struct DeviceStatusCard: View {
     case .printer: PrinterArt(busy: false, error: false, tint: tint)
     case .kitchen: CookerArt(cooking: false, tint: tint)
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
-    case .heater, .dehumidifier: ApplianceArt(kind: d.category, on: false, level: 0.3, tint: tint)
+    case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
+    case .dehumidifier: DehumidifierArt(on: false, level: 0.3, tint: tint)
     case .humidifier: HumidifierArt(on: false, tint: tint)
     case .vacuum: VacuumArt(on: false, busy: false, tint: tint)
     case .sensor:
@@ -612,29 +614,56 @@ struct VacuumDetail: View {
     }
 }
 
-// MARK: 取暖器 / 除湿机
-struct ApplianceDetail: View {
+// MARK: 取暖器
+struct HeaterDetail: View {
     @EnvironmentObject var m: AppModel
     let dc: DC
     var body: some View {
-        let d = dc.device, heater = d.category == .heater
-        let tint = heater ? Theme.heat : Color.cyan
+        let d = dc.device, tint = Theme.heat
         let on = m.powerInfo(d)?.isOn ?? false
-        let target = heater ? dc.p("target-temperature") : dc.p("target-humidity")
+        let target = dc.p("target-temperature")
         let hum = dc.num(dc.p("relative-humidity"))
-        let tankFull = dc.bool(dc.p("tank-full") ?? dc.p("water-tank-full"))
         TypeShell(device: d, tint: tint, isOn: on, title: on ? L("运行中", "Running") : L("已关闭", "Off"),
-                  subtitle: joined([heater ? L("取暖器", "Heater") : L("除湿机", "Dehumidifier"), dc.text(dc.p("mode")), tankFull == true ? L("水箱已满", "Tank full") : nil]),
+                  subtitle: joined([L("取暖器", "Heater"), dc.text(dc.p("mode"))]),
                   powerOn: on, onPower: powerHandler(m, d)) {
-            ApplianceArt(kind: d.category, on: on, level: heater ? propFraction(target, dc.num(target)) : (tankFull == true ? 1 : max(0.15, (hum ?? 40) / 100 * 0.6)), tint: tint)
+            HeaterArt(on: on, level: propFraction(target, dc.num(target)), tint: tint)
         } content: {
-            BigValue(value: dc.num(target).map { "\(Int($0))" }, unit: heater ? "°C" : "%", caption: heater ? L("目标温度", "Target") : L("目标湿度", "Target humidity"), dim: !on)
-            if let target { PropSlider(dc: dc, prop: target, colors: heater ? [Theme.cool, Color(red: 1, green: 0.85, blue: 0.4), Theme.heat] : [Theme.heat, .cyan, Theme.cool], enabled: on) }
+            BigValue(value: dc.num(target).map { "\(Int($0))" }, unit: "°C", caption: L("目标温度", "Target"), dim: !on)
+            if let target { PropSlider(dc: dc, prop: target, colors: [Theme.cool, Color(red: 1, green: 0.85, blue: 0.4), Theme.heat], enabled: on) }
             ReadoutRow(items: [("thermometer.medium", dc.num(dc.p("temperature")).map { L("室温 ", "Room ") + "\(PropValue.double($0))°C" }),
                                ("humidity.fill", hum.map { L("湿度 ", "Humidity ") + "\(Int($0))%" })], tint: tint)
             HStack(spacing: 8) {
                 PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "slider.horizontal.3", tint: tint)
-                PropTile(dc: dc, prop: heater ? dc.p("heat-level") : dc.p("fan-level"), title: heater ? L("档位", "Level") : L("风速", "Fan"), icon: heater ? "flame" : "wind", tint: tint)
+                PropTile(dc: dc, prop: dc.p("heat-level"), title: L("档位", "Level"), icon: "flame", tint: tint)
+                PropTile(dc: dc, prop: dc.p("physical-controls-locked"), title: L("童锁", "Child lock"), icon: "lock", tint: tint)
+                PropTile(dc: dc, prop: dc.p("alarm"), title: L("提示音", "Sound"), icon: "bell", tint: tint)
+            }
+        }
+    }
+}
+
+// MARK: 除湿机
+struct DehumidifierDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var body: some View {
+        let d = dc.device, tint = Color.cyan
+        let on = m.powerInfo(d)?.isOn ?? false
+        let target = dc.p("target-humidity")
+        let hum = dc.num(dc.p("relative-humidity"))
+        let tankFull = dc.bool(dc.p("tank-full") ?? dc.p("water-tank-full"))
+        TypeShell(device: d, tint: tint, isOn: on, title: on ? L("运行中", "Running") : L("已关闭", "Off"),
+                  subtitle: joined([L("除湿机", "Dehumidifier"), dc.text(dc.p("mode")), tankFull == true ? L("水箱已满", "Tank full") : nil]),
+                  powerOn: on, onPower: powerHandler(m, d)) {
+            DehumidifierArt(on: on, level: tankFull == true ? 1 : max(0.15, (hum ?? 40) / 100 * 0.6), tint: tint)
+        } content: {
+            BigValue(value: dc.num(target).map { "\(Int($0))" }, unit: "%", caption: L("目标湿度", "Target humidity"), dim: !on)
+            if let target { PropSlider(dc: dc, prop: target, colors: [Theme.heat, .cyan, Theme.cool], enabled: on) }
+            ReadoutRow(items: [("thermometer.medium", dc.num(dc.p("temperature")).map { L("室温 ", "Room ") + "\(PropValue.double($0))°C" }),
+                               ("humidity.fill", hum.map { L("湿度 ", "Humidity ") + "\(Int($0))%" })], tint: tint)
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "slider.horizontal.3", tint: tint)
+                PropTile(dc: dc, prop: dc.p("fan-level"), title: L("风速", "Fan"), icon: "wind", tint: tint)
                 PropTile(dc: dc, prop: dc.p("physical-controls-locked"), title: L("童锁", "Child lock"), icon: "lock", tint: tint)
                 PropTile(dc: dc, prop: dc.p("alarm"), title: L("提示音", "Sound"), icon: "bell", tint: tint)
             }

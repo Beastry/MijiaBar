@@ -781,13 +781,6 @@ struct VacuumArt: View {
     }
 }
 
-struct ApplianceArt: View {
-    let kind: DeviceCategory, on: Bool, level: Double, tint: Color
-    var body: some View {
-        if kind == .heater { HeaterArt(on: on, level: level, tint: tint) } else { DehumidifierArt(on: on, level: level, tint: tint) }
-    }
-}
-
 /// 油汀取暖器：一排白色亮面散热片。开机后散热片从底部透出设备色的热，强度跟随目标温度；热量用上升的柔光粒子表达（不用波浪线）。
 struct HeaterArt: View {
     let on: Bool, level: Double, tint: Color

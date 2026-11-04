@@ -7,14 +7,78 @@ import MijiaCore
     @Test func dedicatedDemoDevicesAndArt() throws {
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
-                                (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier")] {
+                                (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
+                                (.heater, "heater"), (.dehumidifier, "dehumidifier")] {
             let device = try #require(model.devices.first { $0.category == category })
-            #expect(device.homeId == "h2")
+            #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
         #expect(ArtGallery.rows.count == 25)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func heaterDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d22" })
+        #expect(device.category == .heater)
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("客厅", "Living room"))
+        #expect(model.powerInfo(device)?.isOn == true)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        for name in ["on", "target-temperature", "mode", "heat-level", "physical-controls-locked"] {
+            #expect(context.p(name)?.writable == true)
+        }
+        let target = try #require(context.p("target-temperature"))
+        #expect(target.range == [16, 30, 1])
+        #expect(context.num(target) == 24)
+        #expect(context.p("mode")?.options?.map(\.value) == [0, 1])
+        #expect(context.p("heat-level")?.options?.map(\.value) == [1, 2, 3])
+        #expect(context.num(context.p("heat-level")) == 2)
+        #expect(context.bool(context.p("physical-controls-locked")) == false)
+        for name in ["temperature", "relative-humidity"] {
+            #expect(context.p(name)?.writable == false)
+            #expect(context.num(context.p(name)) != nil)
+        }
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: HeaterDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: HeaterArt.self))
+    }
+
+    @Test func dehumidifierDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d7" })
+        #expect(device.category == .dehumidifier)
+        #expect(device.homeId == "h1")
+        #expect(device.roomName == L("书房", "Study"))
+        #expect(model.powerInfo(device)?.isOn == false)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        for name in ["on", "target-humidity", "mode", "fan-level", "physical-controls-locked"] {
+            #expect(context.p(name)?.writable == true)
+        }
+        #expect(context.num(context.p("target-humidity")) == 50)
+        #expect(context.p("mode")?.options?.map(\.value) == [0, 1])
+        #expect(context.num(context.p("mode")) == 0)
+        #expect(context.p("fan-level")?.options?.map(\.value) == [1, 2, 3])
+        #expect(context.num(context.p("fan-level")) == 2)
+        #expect(context.bool(context.p("physical-controls-locked")) == false)
+        for name in ["temperature", "relative-humidity", "tank-full"] {
+            #expect(context.p(name)?.writable == false)
+        }
+        #expect(context.num(context.p("temperature")) != nil)
+        #expect(context.num(context.p("relative-humidity")) == 62)
+        #expect(context.bool(context.p("tank-full")) == false)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: DehumidifierDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: DehumidifierArt.self))
     }
 
     @Test func airPurifierDemoRoutingAndProps() throws {

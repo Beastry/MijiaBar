@@ -37,6 +37,9 @@ extension AppModel {
             dev("d20", L("客厅窗帘", "Living room curtain"), "lumi.curtain.demo", L("客厅", "Living room"), home: "h2"),
             dev("d21", L("空气净化器", "Air purifier"), "zhimi.airpurifier.demo", L("客厅", "Living room"), home: "h2"),
             dev("d22", L("取暖器", "Heater"), "zhimi.heater.demo", L("客厅", "Living room"), home: "h2"),
+            dev("d23", L("智能音箱", "Speaker"), "xiaomi.wifispeaker.demo", L("客厅", "Living room"), home: "h2"),
+            dev("d24", L("电饭煲", "Rice cooker"), "chunmi.cooker.demo", L("厨房", "Kitchen"), home: "h2"),
+            dev("d25", L("净水器", "Water purifier"), "yunmi.waterpuri.demo", L("厨房", "Kitchen"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -141,6 +144,35 @@ extension AppModel {
             S(3, "environment", [P(3, 1, "temperature", "float", ["read"], unit: "celsius"),
                                   P(3, 2, "relative-humidity", "uint8", ["read"], unit: "percentage")])])
         states["d22"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(24), "2.3": .int(0), "2.4": .int(2), "2.5": .bool(false), "3.1": .double(21.5), "3.2": .int(45)], spec: heater, legacy: false, source: "cloud")
+        let speaker = DeviceSpec.parse(["services": [
+            ["iid": 2, "type": "urn:miot-spec-v2:service:play-control:0", "properties": [
+                ["iid": 1, "type": "urn:miot-spec-v2:property:playing-state:0", "format": "uint8", "access": ["read"], "value-list": [
+                    ["value": 1, "description": "Playing"], ["value": 2, "description": "Idle"]]]
+            ], "actions": [
+                ["iid": 1, "type": "urn:miot-spec-v2:action:previous:0", "in": []],
+                ["iid": 2, "type": "urn:miot-spec-v2:action:play:0", "in": []],
+                ["iid": 3, "type": "urn:miot-spec-v2:action:pause:0", "in": []],
+                ["iid": 4, "type": "urn:miot-spec-v2:action:next:0", "in": []]
+            ]],
+            ["iid": 3, "type": "urn:miot-spec-v2:service:speaker:0", "properties": [
+                ["iid": 1, "type": "urn:miot-spec-v2:property:volume:0", "format": "uint8", "access": ["read", "write"], "value-range": [0, 100, 1], "unit": "percentage"],
+                ["iid": 2, "type": "urn:miot-spec-v2:property:mute:0", "format": "bool", "access": ["read", "write"]]
+            ]]
+        ]])
+        states["d23"] = DeviceState(values: ["2.1": .int(1), "3.1": .int(60), "3.2": .bool(false)], spec: speaker, legacy: false, source: "cloud")
+        let cooker = DeviceSpec(type: "", description: "", services: [S(2, "cooker", [
+            P(2, 1, "status", "uint8", ["read"], opts: [ValueOption(value: 1, description: "Cooking"), ValueOption(value: 2, description: "Idle")]),
+            P(2, 2, "mode", "uint8", opts: [ValueOption(value: 0, description: "Rice"), ValueOption(value: 1, description: "Porridge")]),
+            P(2, 3, "left-time", "uint16", ["read"], unit: "minutes"),
+            P(2, 4, "temperature", "uint8", ["read"], unit: "celsius"),
+            P(2, 5, "target-temperature", "uint8", range: [40, 100, 1], unit: "celsius"),
+            P(2, 6, "heat-level", "uint8", range: [1, 3, 1]), P(2, 7, "alarm", "bool")])])
+        states["d24"] = DeviceState(values: ["2.1": .int(1), "2.2": .int(0), "2.3": .int(25), "2.4": .int(96), "2.5": .int(100), "2.6": .int(2), "2.7": .bool(true)], spec: cooker, legacy: false, source: "cloud")
+        let purifier = DeviceSpec(type: "", description: "", services: [S(2, "water-purifier", [
+            P(2, 1, "tds-out", "uint16", ["read"], unit: "ppm"),
+            P(2, 2, "tds-in", "uint16", ["read"], unit: "ppm"),
+            P(2, 3, "filter-life-level", "uint8", ["read"], range: [0, 100, 1], unit: "percentage")])])
+        states["d25"] = DeviceState(values: ["2.1": .int(8), "2.2": .int(180), "2.3": .int(72)], spec: purifier, legacy: false, source: "cloud")
         for d in devices { if let st = states[d.did], let t = Transport.from(st.source, device: d) { transports[d.did] = t } }
     }
 }
@@ -325,6 +357,15 @@ enum Snapshot {
             m.states["d7"]?.values["2.6"] = .bool(true); render(root, f("dehumidifier-tank-full"))
             m.states["d7"]?.values["2.6"] = .bool(false)
             m.states["d7"]?.values["2.1"] = .bool(false)
+            m.page = .detail("d23"); render(root, f("speaker"))
+            m.states["d23"]?.values["2.1"] = .int(2); render(root, f("speaker-idle"))
+            m.states["d23"]?.values["2.1"] = .int(1)
+            m.page = .detail("d24"); render(root, f("cooker"))
+            m.states["d24"]?.values["2.1"] = .int(2)
+            m.states["d24"]?.values["2.3"] = .int(0); render(root, f("cooker-idle"))
+            m.states["d24"]?.values["2.1"] = .int(1)
+            m.states["d24"]?.values["2.3"] = .int(25)
+            m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d6"); render(root, f("thermo-history"), size: CGSize(width: 360, height: 900))
             m.page = .detail("d12"); render(root, f("contact-history"), size: CGSize(width: 360, height: 640))
             LiveControls.snapshotWatching = true

@@ -8,7 +8,8 @@ import MijiaCore
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
-                                (.heater, "heater"), (.dehumidifier, "dehumidifier")] {
+                                (.heater, "heater"), (.dehumidifier, "dehumidifier"),
+                                (.speaker, "speaker"), (.kitchen, "cooker"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
@@ -16,6 +17,111 @@ import MijiaCore
         }
         #expect(ArtGallery.rows.count == 25)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func speakerDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d23" })
+        #expect(device.category == .speaker)
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("客厅", "Living room"))
+        #expect(device.isOnline)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let volume = try #require(context.p("volume", in: "speaker"))
+        #expect(volume.writable)
+        #expect(volume.format == "uint8")
+        #expect(volume.range == [0, 100, 1])
+        #expect(volume.unit == "percentage")
+        #expect(context.num(volume) == 60)
+        let mute = try #require(context.p("mute", in: "speaker"))
+        #expect(mute.writable)
+        #expect(mute.format == "bool")
+        #expect(context.bool(mute) == false)
+        let playing = try #require(context.p("playing-state"))
+        #expect(!playing.writable)
+        #expect(playing.options?.map(\.description) == ["Playing", "Idle"])
+        let playingOption = try #require(playing.options?.first { $0.description == "Playing" })
+        #expect(context.num(playing) == Double(playingOption.value))
+        for name in ["previous", "play", "pause", "next"] {
+            let action = try #require(context.a(name, in: "play-control"))
+            #expect(action.siid == 2)
+            #expect(action.inputs.isEmpty)
+        }
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: SpeakerDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: SpeakerArt.self))
+    }
+
+    @Test func cookerDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d24" })
+        #expect(device.category == .kitchen)
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("厨房", "Kitchen"))
+        #expect(device.isOnline)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let status = try #require(context.p("status"))
+        #expect(!status.writable)
+        #expect(status.options?.map(\.description) == ["Cooking", "Idle"])
+        let cookingOption = try #require(status.options?.first { $0.description == "Cooking" })
+        #expect(context.num(status) == Double(cookingOption.value))
+        let mode = try #require(context.p("mode"))
+        #expect(mode.writable)
+        #expect(mode.options?.map(\.value) == [0, 1])
+        #expect(context.num(mode) == 0)
+        let left = try #require(context.p("left-time"))
+        #expect(!left.writable)
+        #expect(left.unit == "minutes")
+        #expect(context.num(left) == 25)
+        #expect(context.p("temperature")?.writable == false)
+        for name in ["target-temperature", "heat-level", "alarm"] {
+            #expect(context.p(name)?.writable == true)
+        }
+        #expect(context.num(context.p("temperature")) == 96)
+        #expect(context.num(context.p("target-temperature")) == 100)
+        #expect(context.num(context.p("heat-level")) == 2)
+        #expect(context.bool(context.p("alarm")) == true)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: CookerDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: CookerArt.self))
+    }
+
+    @Test func purifierDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d25" })
+        #expect(device.category == .purifier)
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("厨房", "Kitchen"))
+        #expect(device.isOnline)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let spec = try #require(state.spec)
+        let properties = spec.controlServices.flatMap(\.properties)
+        let tds = properties.filter { $0.name.contains("tds") }
+        let filters = properties.filter { $0.name.contains("filter-life") }
+        #expect(tds.count == 2)
+        #expect(filters.count == 1)
+        #expect(context.num(tds.first { $0.name.contains("out") }) == 8)
+        #expect(context.num(tds.first { $0.name.contains("in") }) == 180)
+        #expect(filters.compactMap { context.num($0) }.min() == 72)
+        for property in properties {
+            #expect(!property.writable)
+            #expect(context.num(property) != nil)
+        }
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: PurifierDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: PurifierArt.self))
     }
 
     @Test func heaterDemoRoutingAndProps() throws {

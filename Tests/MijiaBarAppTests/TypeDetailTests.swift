@@ -19,6 +19,145 @@ import MijiaCore
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
     }
 
+    @Test func thermoDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d6" })
+        #expect(device.category == .sensor)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.num(context.p("temperature")) == 25.6)
+        #expect(context.num(context.p("relative-humidity")) == 58)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: SensorDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(!contains(SensorDetail(dc: context).body, type: MotionSensorDetail.self))
+    }
+
+    @Test func contactDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d12" })
+        #expect(device.category == .sensor)
+        #expect(device.form == .contact)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.bool(context.p("contact-state")) == false)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: SensorDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(SensorDetail(dc: context).body, type: ContactSensorDetail.self))
+    }
+
+    @Test func leakDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d13" })
+        #expect(device.category == .sensor)
+        #expect(device.form == .leak)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.bool(context.p("submersion-state")) == true)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: SensorDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(SensorDetail(dc: context).body, type: LeakSensorDetail.self))
+    }
+
+    @Test func motionDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d26" })
+        #expect(device.category == .sensor)
+        #expect(device.form == .motion)
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("客厅", "Living room"))
+        #expect(device.isOnline)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let illumination = try #require(context.p("illumination"))
+        #expect(!illumination.writable)
+        #expect(illumination.format == "uint16")
+        #expect(illumination.unit == "lux")
+        #expect(context.num(illumination) == 320)
+        let battery = try #require(context.p("battery-level"))
+        #expect(!battery.writable)
+        #expect(battery.unit == "percentage")
+        #expect(context.num(battery) == 86)
+        #expect(!Recorder.shared.series(device.did, "illumination").samples.isEmpty)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: SensorDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(SensorDetail(dc: context).body, type: MotionSensorDetail.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: MotionSensorArt.self))
+    }
+
+    @Test func cameraDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d10" })
+        #expect(device.category == .camera)
+        #expect(device.form == nil)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.bool(context.p("on", in: "camera-control")) == true)
+        #expect(context.p("night-shot") != nil)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: CameraDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+    }
+
+    @Test func doorbellDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d11" })
+        #expect(device.category == .camera)
+        #expect(device.form == .doorbell)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.num(context.p("battery-level")) == 64)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: CameraDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: DoorbellArt.self))
+    }
+
+    @Test func printerDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d27" })
+        #expect(device.category == .printer)
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("书房", "Study"))
+        #expect(device.isOnline)
+        #expect(model.devices.first { $0.did == "d9" }?.isOnline == false)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let status = try #require(context.p("status", in: "printer"))
+        #expect(!status.writable)
+        #expect(status.options?.map(\.description) == ["Processing", "Idle", "Error"])
+        let processing = try #require(status.options?.first { $0.description == "Processing" })
+        #expect(context.num(status) == Double(processing.value))
+        let pages = try #require(context.p("printed-page"))
+        #expect(!pages.writable)
+        #expect(context.num(pages) == 128)
+        let sleep = try #require(context.p("auto-sleep-mode"))
+        #expect(sleep.writable)
+        #expect(sleep.format == "bool")
+        #expect(context.bool(sleep) == true)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: PrinterDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: PrinterArt.self))
+    }
+
     @Test func speakerDemoRoutingAndProps() throws {
         let model = AppModel(mock: true)
         let device = try #require(model.devices.first { $0.did == "d23" })

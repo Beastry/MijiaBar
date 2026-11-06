@@ -40,6 +40,8 @@ extension AppModel {
             dev("d23", L("智能音箱", "Speaker"), "xiaomi.wifispeaker.demo", L("客厅", "Living room"), home: "h2"),
             dev("d24", L("电饭煲", "Rice cooker"), "chunmi.cooker.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d25", L("净水器", "Water purifier"), "yunmi.waterpuri.demo", L("厨房", "Kitchen"), home: "h2"),
+            dev("d26", L("人体传感器", "Motion sensor"), "lumi.sensor_motion.demo", L("客厅", "Living room"), home: "h2"),
+            dev("d27", L("打印机", "Printer"), "hannto.printer.demo", L("书房", "Study"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -66,6 +68,7 @@ extension AppModel {
         Recorder.shared.seed("d5", "power", Self.demoPowerSeries())
         Recorder.shared.seed("d6", "temperature", Self.demoWave(25.6, 2.2)); Recorder.shared.seed("d6", "humidity", Self.demoWave(58, 6))
         Recorder.shared.seed("d12", "contact", Self.demoToggles()); Recorder.shared.seed("d13", "leak", Self.demoToggles(start: 0))
+        Recorder.shared.seed("d26", "illumination", Self.demoWave(320, 120))
         states["d5"] = DeviceState(values: ["2.1": .bool(true), "11.2": .double(36.5)], spec: plug, legacy: false, source: "cloud")
         let ht = DeviceSpec(type: "", description: "", services: [S(2, "temperature-humidity-sensor", [P(2, 1, "temperature", "float", ["read"], unit: "celsius"), P(2, 2, "relative-humidity", "uint8", ["read"], unit: "percentage")])])
         states["d6"] = DeviceState(values: ["2.1": .double(25.6), "2.2": .int(58)], spec: ht, legacy: false, source: "cloud")
@@ -173,6 +176,13 @@ extension AppModel {
             P(2, 2, "tds-in", "uint16", ["read"], unit: "ppm"),
             P(2, 3, "filter-life-level", "uint8", ["read"], range: [0, 100, 1], unit: "percentage")])])
         states["d25"] = DeviceState(values: ["2.1": .int(8), "2.2": .int(180), "2.3": .int(72)], spec: purifier, legacy: false, source: "cloud")
+        let motion = DeviceSpec(type: "", description: "", services: [S(2, "motion-sensor", [
+            P(2, 1, "illumination", "uint16", ["read"], unit: "lux")]), battery])
+        states["d26"] = DeviceState(values: ["2.1": .int(320), "3.1": .int(86)], spec: motion, legacy: false, source: "cloud")
+        let printer = DeviceSpec(type: "", description: "", services: [S(2, "printer", [
+            P(2, 1, "status", "uint8", ["read"], opts: [ValueOption(value: 1, description: "Processing"), ValueOption(value: 2, description: "Idle"), ValueOption(value: 3, description: "Error")]),
+            P(2, 2, "printed-page", "uint32", ["read"]), P(2, 3, "auto-sleep-mode", "bool")])])
+        states["d27"] = DeviceState(values: ["2.1": .int(1), "2.2": .int(128), "2.3": .bool(true)], spec: printer, legacy: false, source: "cloud")
         for d in devices { if let st = states[d.did], let t = Transport.from(st.source, device: d) { transports[d.did] = t } }
     }
 }
@@ -366,6 +376,10 @@ enum Snapshot {
             m.states["d24"]?.values["2.1"] = .int(1)
             m.states["d24"]?.values["2.3"] = .int(25)
             m.page = .detail("d25"); render(root, f("purifier"))
+            m.page = .detail("d26"); render(root, f("motion"))
+            m.page = .detail("d27"); render(root, f("printer"))
+            m.states["d27"]?.values["2.1"] = .int(2); render(root, f("printer-idle"))
+            m.states["d27"]?.values["2.1"] = .int(1)
             m.page = .detail("d6"); render(root, f("thermo-history"), size: CGSize(width: 360, height: 900))
             m.page = .detail("d12"); render(root, f("contact-history"), size: CGSize(width: 360, height: 640))
             LiveControls.snapshotWatching = true

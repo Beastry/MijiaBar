@@ -93,13 +93,14 @@ extension DeviceCategory {
 }
 
 /// 同一类别里外形不一样的设备：插画和列表图标按型号区分
-enum DeviceForm { case doorbell, motion, contact, leak }
+enum DeviceForm { case doorbell, motion, contact, leak, kettle }
 
 extension Device {
     var form: DeviceForm? {
         let m = model.lowercased()
         switch category {
         case .camera: return m.contains(".cateye.") ? .doorbell : nil
+        case .kitchen: return m.contains("kettle") ? .kettle : nil
         case .sensor:
             if m.contains("magnet") { return .contact }
             if m.contains("flood") || m.contains("wleak") { return .leak }
@@ -113,6 +114,7 @@ extension Device {
         case .motion: return "figure.walk.motion"
         case .contact: return "door.left.hand.closed"
         case .leak: return "drop.triangle"
+        case .kettle: return "mug"
         case nil: return category.icon
         }
     }

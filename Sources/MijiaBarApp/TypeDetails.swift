@@ -22,7 +22,7 @@ struct TypeDetailView: View {
         case .speaker: SpeakerDetail(dc: dc)
         case .camera: CameraDetail(dc: dc)
         case .printer: PrinterDetail(dc: dc)
-        case .kitchen: CookerDetail(dc: dc)
+        case .kitchen: if device.form == .kettle { KettleDetail(dc: dc) } else { CookerDetail(dc: dc) }
         case .purifier: PurifierDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
         case .dehumidifier: DehumidifierDetail(dc: dc)
@@ -84,7 +84,7 @@ struct DeviceStatusCard: View {
     case .speaker: SpeakerArt(playing: false, volume: 0.5, tint: tint)
     case .camera: if d.form == .doorbell { DoorbellArt(on: false, tint: tint) } else { CameraArt(on: false, tint: tint) }
     case .printer: PrinterArt(busy: false, error: false, tint: tint)
-    case .kitchen: CookerArt(cooking: false, tint: tint)
+    case .kitchen: if d.form == .kettle { KettleArt(boiling: false, tint: tint) } else { CookerArt(cooking: false, tint: tint) }
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
     case .dehumidifier: DehumidifierArt(on: false, level: 0.3, tint: tint)
@@ -336,6 +336,31 @@ struct CookerDetail: View {
             HStack(spacing: 8) {
                 PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "fork.knife", tint: tint)
                 PropTile(dc: dc, prop: dc.p("alarm"), title: L("提示音", "Sound"), icon: "bell", tint: tint)
+            }
+        }
+    }
+}
+
+struct KettleDetail: View {
+    let dc: DC
+    var body: some View {
+        let d = dc.device, tint = Color.orange
+        let status = dc.p("status")
+        let raw = dc.v(status).flatMap { value in status?.options?.first { Double($0.value) == value.doubleValue }?.description.lowercased() } ?? ""
+        let boiling = ["cooking", "boiling", "heating", "working"].contains(raw)
+        TypeShell(device: d, tint: tint, isOn: boiling, title: boiling ? L("加热中", "Boiling") : (dc.text(status) ?? (d.isOnline ? L("在线", "Online") : L("离线", "Offline"))),
+                  subtitle: L("电热水壶", "Electric kettle")) {
+            KettleArt(boiling: boiling, tint: tint)
+        } content: {
+            if let temperature = dc.num(dc.p("temperature")) {
+                BigValue(value: "\(Int(temperature))", unit: "°C", caption: L("温度", "Temperature"))
+            } else { BigValue(value: dc.text(status), caption: L("当前状态", "Status")) }
+            ReadoutRow(items: [("target", dc.num(dc.p("target-temperature")).map { L("目标 ", "Target ") + "\(Int($0))°C" })], tint: tint)
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("target-temperature"), title: L("目标温度", "Target temperature"), icon: "thermometer.medium", tint: tint)
+            }
+            if let target = dc.p("target-temperature"), target.writable, target.range != nil {
+                PropSlider(dc: dc, prop: target, colors: [tint.opacity(0.3), tint], enabled: d.isOnline)
             }
         }
     }

@@ -554,6 +554,52 @@ struct CookerArt: View {
     }
 }
 
+struct KettleArt: View {
+    let boiling: Bool, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        PowerTimeline(on: boiling, running: true) { time, level in
+            ZStack {
+                Ambient(tint, level * 0.6, width: 160, height: 110).position(x: 90, y: 78)
+                Canvas { context, _ in steam(&context, time: time, level: level) }
+                Path { path in
+                    path.move(to: CGPoint(x: 119, y: 52))
+                    path.addCurve(to: CGPoint(x: 123, y: 111), control1: CGPoint(x: 161, y: 42), control2: CGPoint(x: 165, y: 104))
+                }
+                .stroke(darkGlass, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                Path { path in
+                    path.move(to: CGPoint(x: 62, y: 72))
+                    path.addQuadCurve(to: CGPoint(x: 24, y: 40), control: CGPoint(x: 33, y: 66))
+                    path.addLine(to: CGPoint(x: 35, y: 38))
+                    path.addQuadCurve(to: CGPoint(x: 64, y: 56), control: CGPoint(x: 42, y: 54))
+                    path.closeSubpath()
+                }
+                .appliance(tint, level)
+                RoundedRectangle(cornerRadius: 24, style: .continuous).appliance(tint, level)
+                    .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.black.opacity(0.08 * (1 - level))))
+                    .frame(width: 76, height: 86).position(x: 90, y: 81)
+                Capsule().fill(aluminum).frame(width: 62, height: 8).position(x: 90, y: 38)
+                Capsule().fill(darkGlass).frame(width: 18, height: 8).position(x: 90, y: 31)
+                RoundedRectangle(cornerRadius: 5).fill(darkGlass).frame(width: 12, height: 42).position(x: 90, y: 79)
+                Capsule().fill(tint.opacity(level)).frame(width: 4, height: 30).position(x: 90, y: 83)
+                Capsule().fill(tint).frame(width: 18, height: 3).opacity(level).position(x: 90, y: 112)
+                Capsule().fill(darkGlass).frame(width: 90, height: 8).position(x: 90, y: 129)
+            }
+            .frame(width: 180, height: 136)
+        }
+    }
+    func steam(_ context: inout GraphicsContext, time: Double, level: Double) {
+        guard boiling, level > 0.01 else { return }
+        let rate = reduceMotion ? 0 : 0.35
+        var dots: [(CGPoint, Double)] = []
+        for index in 0..<6 {
+            let progress = (time * rate + Double(index) / 6).truncatingRemainder(dividingBy: 1)
+            dots.append((CGPoint(x: 29 + sin(progress * 6 + Double(index)) * 5, y: 35 - progress * 32), level * 0.8 * sin(progress * .pi)))
+        }
+        particles(&context, dots, tint: tint)
+    }
+}
+
 /// 净水器：白色亮面主机 + 一块显示滤芯寿命的玻璃窗，旁边是铝质鹅颈龙头。
 /// 滤芯余量用设备色液位表示；不知道是否在出水，所以不画水流。
 struct PurifierArt: View {

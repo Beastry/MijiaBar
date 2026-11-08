@@ -554,6 +554,50 @@ struct CookerArt: View {
     }
 }
 
+struct DishwasherArt: View {
+    let washing: Bool, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        PowerTimeline(on: washing, running: true) { time, level in
+            ZStack {
+                Ambient(tint, level * 0.6, width: 170, height: 116).position(x: 90, y: 76)
+                RoundedRectangle(cornerRadius: 9, style: .continuous).appliance(tint, level)
+                    .frame(width: 112, height: 118).position(x: 90, y: 70)
+                RoundedRectangle(cornerRadius: 4).fill(darkGlass)
+                    .frame(width: 100, height: 17).position(x: 90, y: 24)
+                HStack(spacing: 5) {
+                    Circle().fill(aluminum).frame(width: 5, height: 5)
+                    Capsule().fill(tint).frame(width: 22, height: 3).opacity(0.15 + level * 0.85)
+                    Spacer()
+                    Circle().fill(tint).frame(width: 3, height: 3).opacity(0.15 + level * 0.85)
+                }
+                .frame(width: 80).position(x: 90, y: 24)
+                RoundedRectangle(cornerRadius: 6).fill(aluminum)
+                    .frame(width: 100, height: 84).position(x: 90, y: 78)
+                RoundedRectangle(cornerRadius: 4).fill(darkGlass)
+                    .overlay {
+                        ZStack {
+                            Rectangle().fill(LinearGradient(colors: [tint.opacity(0.06), tint.opacity(0.45)], startPoint: .top, endPoint: .bottom)).opacity(level)
+                            ForEach(0..<8) { index in
+                                let phase = (time * (reduceMotion ? 0 : 0.45) + Double(index) / 8).truncatingRemainder(dividingBy: 1)
+                                Capsule().fill(tint.opacity(0.8)).frame(width: 2, height: 5)
+                                    .offset(x: CGFloat(index % 4) * 18 - 27, y: CGFloat(phase) * 48 - 24)
+                                    .opacity(level * sin(phase * .pi))
+                            }
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.18), lineWidth: 0.5))
+                    .frame(width: 82, height: 58).position(x: 90, y: 82)
+                Capsule().fill(aluminum).frame(width: 56, height: 4).position(x: 90, y: 44)
+                RoundedRectangle(cornerRadius: 2).fill(darkGlass)
+                    .frame(width: 92, height: 4).position(x: 90, y: 124)
+            }
+            .frame(width: 180, height: 136)
+        }
+    }
+}
+
 struct KettleArt: View {
     let boiling: Bool, tint: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

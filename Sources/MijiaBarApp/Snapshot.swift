@@ -43,6 +43,7 @@ extension AppModel {
             dev("d26", L("人体传感器", "Motion sensor"), "lumi.sensor_motion.demo", L("客厅", "Living room"), home: "h2"),
             dev("d27", L("打印机", "Printer"), "hannto.printer.demo", L("书房", "Study"), home: "h2"),
             dev("d28", L("电热水壶", "Electric kettle"), "yunmi.kettle.demo", L("厨房", "Kitchen"), home: "h2"),
+            dev("d29", L("洗碗机", "Dishwasher"), "viomi.dishwasher.demo", L("厨房", "Kitchen"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -177,6 +178,11 @@ extension AppModel {
             P(2, 2, "temperature", "uint8", ["read"], unit: "celsius"),
             P(2, 3, "target-temperature", "uint8", range: [40, 100, 1], unit: "celsius")])])
         states["d28"] = DeviceState(values: ["2.1": .int(1), "2.2": .int(96), "2.3": .int(100)], spec: kettle, legacy: false, source: "cloud")
+        let dishwasher = DeviceSpec(type: "", description: "", services: [S(2, "dishwasher", [
+            P(2, 1, "status", "uint8", ["read"], opts: [ValueOption(value: 1, description: "Washing"), ValueOption(value: 2, description: "Idle")]),
+            P(2, 2, "left-time", "uint16", ["read"], unit: "minutes"),
+            P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Intense"), ValueOption(value: 2, description: "Eco")])])])
+        states["d29"] = DeviceState(values: ["2.1": .int(1), "2.2": .int(42), "2.3": .int(0)], spec: dishwasher, legacy: false, source: "cloud")
         let purifier = DeviceSpec(type: "", description: "", services: [S(2, "water-purifier", [
             P(2, 1, "tds-out", "uint16", ["read"], unit: "ppm"),
             P(2, 2, "tds-in", "uint16", ["read"], unit: "ppm"),
@@ -207,6 +213,7 @@ struct ArtGallery: View {
             ("printer", AnyView(PrinterArt(busy: true, error: false, tint: .blue)), AnyView(PrinterArt(busy: false, error: false, tint: .blue))),
             ("cooker", AnyView(CookerArt(cooking: true, tint: .orange)), AnyView(CookerArt(cooking: false, tint: .orange))),
             ("kettle", AnyView(KettleArt(boiling: true, tint: .orange)), AnyView(KettleArt(boiling: false, tint: .orange))),
+            ("dishwasher", AnyView(DishwasherArt(washing: true, tint: .orange)), AnyView(DishwasherArt(washing: false, tint: .orange))),
             ("purifier", AnyView(PurifierArt(on: true, filter: 72, tint: .blue)), AnyView(PurifierArt(on: false, filter: 72, tint: .blue))),
             ("heater", AnyView(HeaterArt(on: true, level: 0.6, tint: Theme.heat)), AnyView(HeaterArt(on: false, level: 0.6, tint: Theme.heat))),
             ("dehumidifier", AnyView(DehumidifierArt(on: true, level: 0.4, tint: .cyan)), AnyView(DehumidifierArt(on: false, level: 0.4, tint: .cyan))),
@@ -385,6 +392,9 @@ enum Snapshot {
             m.page = .detail("d28"); render(root, f("kettle"))
             m.states["d28"]?.values["2.1"] = .int(2); render(root, f("kettle-idle"))
             m.states["d28"]?.values["2.1"] = .int(1)
+            m.page = .detail("d29"); render(root, f("dishwasher"))
+            m.states["d29"]?.values["2.1"] = .int(2); render(root, f("dishwasher-idle"))
+            m.states["d29"]?.values["2.1"] = .int(1)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))
             m.page = .detail("d27"); render(root, f("printer"))

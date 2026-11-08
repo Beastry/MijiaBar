@@ -22,7 +22,10 @@ struct TypeDetailView: View {
         case .speaker: SpeakerDetail(dc: dc)
         case .camera: CameraDetail(dc: dc)
         case .printer: PrinterDetail(dc: dc)
-        case .kitchen: if device.form == .kettle { KettleDetail(dc: dc) } else { CookerDetail(dc: dc) }
+        case .kitchen:
+            if device.form == .kettle { KettleDetail(dc: dc) }
+            else if device.form == .dishwasher { DishwasherDetail(dc: dc) }
+            else { CookerDetail(dc: dc) }
         case .purifier: PurifierDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
         case .dehumidifier: DehumidifierDetail(dc: dc)
@@ -84,7 +87,10 @@ struct DeviceStatusCard: View {
     case .speaker: SpeakerArt(playing: false, volume: 0.5, tint: tint)
     case .camera: if d.form == .doorbell { DoorbellArt(on: false, tint: tint) } else { CameraArt(on: false, tint: tint) }
     case .printer: PrinterArt(busy: false, error: false, tint: tint)
-    case .kitchen: if d.form == .kettle { KettleArt(boiling: false, tint: tint) } else { CookerArt(cooking: false, tint: tint) }
+    case .kitchen:
+        if d.form == .kettle { KettleArt(boiling: false, tint: tint) }
+        else if d.form == .dishwasher { DishwasherArt(washing: false, tint: tint) }
+        else { CookerArt(cooking: false, tint: tint) }
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
     case .dehumidifier: DehumidifierArt(on: false, level: 0.3, tint: tint)
@@ -336,6 +342,29 @@ struct CookerDetail: View {
             HStack(spacing: 8) {
                 PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "fork.knife", tint: tint)
                 PropTile(dc: dc, prop: dc.p("alarm"), title: L("提示音", "Sound"), icon: "bell", tint: tint)
+            }
+        }
+    }
+}
+
+struct DishwasherDetail: View {
+    let dc: DC
+    var body: some View {
+        let d = dc.device, tint = Color.orange
+        let status = dc.p("status")
+        let raw = dc.v(status).flatMap { value in status?.options?.first { Double($0.value) == value.doubleValue }?.description.lowercased() } ?? ""
+        let washing = ["washing", "cleaning", "drying", "working", "busy", "running", "default"].contains(raw)
+        let left = dc.num(dc.p("left-time"))
+        TypeShell(device: d, tint: tint, isOn: washing, title: washing ? L("清洗中", "Washing") : (dc.text(status) ?? (d.isOnline ? L("在线", "Online") : L("离线", "Offline"))),
+                  subtitle: L("洗碗机", "Dishwasher")) {
+            DishwasherArt(washing: washing, tint: tint)
+        } content: {
+            if let left, left > 0 { BigValue(value: "\(Int(left))", unit: L("分钟", "min"), caption: L("剩余时间", "Remaining")) }
+            else { BigValue(value: dc.text(status), caption: L("当前状态", "Status")) }
+            ReadoutRow(items: [("thermometer.medium", dc.num(dc.p("temperature")).map { "\(Int($0))°C" }),
+                               ("target", dc.num(dc.p("target-temperature")).map { L("目标 ", "Target ") + "\(Int($0))°C" })], tint: tint)
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "dishwasher", tint: tint)
             }
         }
     }

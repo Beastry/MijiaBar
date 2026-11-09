@@ -9,13 +9,13 @@ import MijiaCore
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
                                 (.heater, "heater"), (.dehumidifier, "dehumidifier"),
-                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.purifier, "purifier")] {
+                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 27)
+        #expect(ArtGallery.rows.count == 28)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
     }
 
@@ -303,6 +303,37 @@ import MijiaCore
         #expect(contains(offArt(device, tint: device.category.color), type: DishwasherArt.self))
         #expect(!contains(offArt(device, tint: device.category.color), type: CookerArt.self))
         #expect(!contains(offArt(device, tint: device.category.color), type: WasherArt.self))
+    }
+
+    @Test func juicerDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d30" })
+        #expect(device.category == .kitchen)
+        #expect(device.form == .juicer)
+        #expect(device.icon == "cup.and.saucer")
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("厨房", "Kitchen"))
+        #expect(device.isOnline)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let status = try #require(context.p("status"))
+        #expect(!status.writable)
+        #expect(status.options?.map(\.description) == ["Blending", "Idle"])
+        let blendingOption = try #require(status.options?.first { $0.description == "Blending" })
+        #expect(context.num(status) == Double(blendingOption.value))
+        let mode = try #require(context.p("mode"))
+        #expect(mode.writable)
+        #expect(mode.options?.map(\.description) == ["Juice", "Smoothie", "Pulse"])
+        #expect(context.num(mode) == 0)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: JuicerDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: CookerDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: JuicerArt.self))
+        #expect(!contains(offArt(device, tint: device.category.color), type: CookerArt.self))
+        #expect(!contains(offArt(device, tint: device.category.color), type: DishwasherArt.self))
     }
 
     @Test func purifierDemoRoutingAndProps() throws {

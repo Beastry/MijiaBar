@@ -598,6 +598,58 @@ struct DishwasherArt: View {
     }
 }
 
+struct JuicerArt: View {
+    let blending: Bool, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        PowerTimeline(on: blending, running: true) { time, level in
+            ZStack {
+                Ambient(tint, level * 0.6, width: 150, height: 120).position(x: 90, y: 74)
+                Path { path in
+                    path.move(to: CGPoint(x: 117, y: 33))
+                    path.addCurve(to: CGPoint(x: 113, y: 79), control1: CGPoint(x: 151, y: 28), control2: CGPoint(x: 149, y: 78))
+                }
+                .stroke(aluminum, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                Path { path in
+                    path.move(to: CGPoint(x: 48, y: 23))
+                    path.addLine(to: CGPoint(x: 123, y: 23))
+                    path.addLine(to: CGPoint(x: 111, y: 91))
+                    path.addQuadCurve(to: CGPoint(x: 69, y: 91), control: CGPoint(x: 90, y: 96))
+                    path.addLine(to: CGPoint(x: 60, y: 34))
+                    path.closeSubpath()
+                }
+                .fill(LinearGradient(colors: [Color(white: 0.92).opacity(0.85), Color(white: 0.65).opacity(0.5)], startPoint: .leading, endPoint: .trailing))
+                Canvas { context, _ in swirl(&context, time: time, level: level) }
+                ForEach(0..<4) { index in
+                    Capsule().fill(.white.opacity(0.6)).frame(width: 7, height: 1)
+                        .position(x: 104, y: CGFloat(39 + index * 12))
+                }
+                Capsule().fill(darkGlass).frame(width: 70, height: 8).position(x: 90, y: 22)
+                Capsule().fill(aluminum).frame(width: 24, height: 6).position(x: 90, y: 16)
+                RoundedRectangle(cornerRadius: 10, style: .continuous).appliance(tint, level)
+                    .frame(width: 76, height: 34).position(x: 90, y: 111)
+                Circle().fill(darkGlass).frame(width: 18, height: 18).position(x: 90, y: 111)
+                Capsule().fill(tint).frame(width: 2, height: 6).opacity(0.2 + level * 0.8).position(x: 90, y: 107)
+                Capsule().fill(darkGlass).frame(width: 68, height: 4).position(x: 90, y: 130)
+            }
+            .frame(width: 180, height: 136)
+        }
+    }
+    func swirl(_ context: inout GraphicsContext, time: Double, level: Double) {
+        guard blending, level > 0.01 else { return }
+        let phase = reduceMotion ? 0 : time * 4
+        for index in 0..<4 {
+            let centerY = Double(49 + index * 11)
+            var path = Path()
+            path.move(to: CGPoint(x: 69, y: centerY))
+            path.addCurve(to: CGPoint(x: 109, y: centerY),
+                          control1: CGPoint(x: 79, y: centerY - 8 + sin(phase + Double(index)) * 3),
+                          control2: CGPoint(x: 99, y: centerY + 8))
+            context.stroke(path, with: .color(tint.opacity(level * 0.7)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+        }
+    }
+}
+
 struct KettleArt: View {
     let boiling: Bool, tint: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

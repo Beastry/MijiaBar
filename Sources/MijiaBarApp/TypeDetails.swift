@@ -25,6 +25,7 @@ struct TypeDetailView: View {
         case .kitchen:
             if device.form == .kettle { KettleDetail(dc: dc) }
             else if device.form == .dishwasher { DishwasherDetail(dc: dc) }
+            else if device.form == .juicer { JuicerDetail(dc: dc) }
             else { CookerDetail(dc: dc) }
         case .purifier: PurifierDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
@@ -90,6 +91,7 @@ struct DeviceStatusCard: View {
     case .kitchen:
         if d.form == .kettle { KettleArt(boiling: false, tint: tint) }
         else if d.form == .dishwasher { DishwasherArt(washing: false, tint: tint) }
+        else if d.form == .juicer { JuicerArt(blending: false, tint: tint) }
         else { CookerArt(cooking: false, tint: tint) }
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
@@ -365,6 +367,25 @@ struct DishwasherDetail: View {
                                ("target", dc.num(dc.p("target-temperature")).map { L("目标 ", "Target ") + "\(Int($0))°C" })], tint: tint)
             HStack(spacing: 8) {
                 PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: "dishwasher", tint: tint)
+            }
+        }
+    }
+}
+
+struct JuicerDetail: View {
+    let dc: DC
+    var body: some View {
+        let device = dc.device, tint = Color.orange
+        let status = dc.p("status")
+        let raw = dc.v(status).flatMap { value in status?.options?.first { Double($0.value) == value.doubleValue }?.description.lowercased() } ?? ""
+        let blending = ["blending", "juicing", "working", "busy", "running", "default"].contains(raw)
+        TypeShell(device: device, tint: tint, isOn: blending, title: blending ? L("榨汁中", "Blending") : (dc.text(status) ?? (device.isOnline ? L("在线", "Online") : L("离线", "Offline"))),
+                  subtitle: L("榨汁机", "Juicer")) {
+            JuicerArt(blending: blending, tint: tint)
+        } content: {
+            BigValue(value: dc.text(status), caption: L("当前状态", "Status"))
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: device.icon, tint: tint)
             }
         }
     }

@@ -650,6 +650,48 @@ struct JuicerArt: View {
     }
 }
 
+struct IHCookerArt: View {
+    let heating: Bool, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        PowerTimeline(on: heating, running: true) { time, level in
+            let glow = level * (reduceMotion ? 1 : 0.92 + 0.08 * sin(time * 2))
+            ZStack {
+                Ambient(tint, level * 0.6, width: 170, height: 110).position(x: 90, y: 76)
+                Capsule().fill(darkGlass).frame(width: 112, height: 5).position(x: 90, y: 117)
+                RoundedRectangle(cornerRadius: 12, style: .continuous).appliance(tint, level)
+                    .frame(width: 152, height: 86).position(x: 90, y: 71)
+                RoundedRectangle(cornerRadius: 11, style: .continuous).fill(aluminum)
+                    .frame(width: 148, height: 82).position(x: 90, y: 71)
+                RoundedRectangle(cornerRadius: 10, style: .continuous).fill(darkGlass)
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(.white.opacity(0.2), lineWidth: 0.8))
+                    .frame(width: 148, height: 76).position(x: 90, y: 66)
+                ZStack {
+                    Glow(tint, glow * 0.35, diameter: 62, softness: 10)
+                    ForEach(0..<4) { index in
+                        let diameter = CGFloat(32 + index * 12)
+                        Circle().stroke(Color(white: 0.32), lineWidth: 1)
+                            .frame(width: diameter, height: diameter)
+                        Circle().stroke(tint.opacity(glow * 0.35), lineWidth: 5)
+                            .frame(width: diameter, height: diameter)
+                        Circle().stroke(tint.opacity(glow), lineWidth: 1.5)
+                            .frame(width: diameter, height: diameter)
+                    }
+                }
+                .scaleEffect(x: 1, y: 0.68).position(x: 90, y: 61)
+                ForEach(0..<3) { index in
+                    Capsule().fill(Color(white: 0.55)).frame(width: 10, height: 2)
+                        .position(x: CGFloat(61 + index * 15), y: 94)
+                }
+                Circle().fill(darkGlass).overlay(Circle().stroke(aluminum, lineWidth: 1))
+                    .frame(width: 12, height: 12).position(x: 120, y: 94)
+                Capsule().fill(tint).frame(width: 2, height: 4).opacity(level).position(x: 120, y: 91)
+            }
+            .frame(width: 180, height: 136)
+        }
+    }
+}
+
 struct KettleArt: View {
     let boiling: Bool, tint: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

@@ -93,7 +93,7 @@ extension DeviceCategory {
 }
 
 /// 同一类别里外形不一样的设备：插画和列表图标按型号区分
-enum DeviceForm { case doorbell, motion, contact, leak, kettle, dishwasher, juicer }
+enum DeviceForm { case doorbell, motion, contact, leak, kettle, dishwasher, juicer, ihcooker }
 
 extension Device {
     var form: DeviceForm? {
@@ -103,7 +103,8 @@ extension Device {
         case .kitchen:
             if m.contains("dishwasher") { return .dishwasher }
             if m.contains("kettle") { return .kettle }
-            return m.contains("juicer") ? .juicer : nil
+            if m.contains("juicer") { return .juicer }
+            return m.contains("ihcooker") ? .ihcooker : nil
         case .sensor:
             if m.contains("magnet") { return .contact }
             if m.contains("flood") || m.contains("wleak") { return .leak }
@@ -120,6 +121,7 @@ extension Device {
         case .kettle: return "mug"
         case .dishwasher: return "dishwasher"
         case .juicer: return "cup.and.saucer"
+        case .ihcooker: return "cooktop"
         case nil: return category.icon
         }
     }

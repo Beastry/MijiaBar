@@ -9,13 +9,13 @@ import MijiaCore
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
                                 (.heater, "heater"), (.dehumidifier, "dehumidifier"),
-                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.purifier, "purifier")] {
+                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 28)
+        #expect(ArtGallery.rows.count == 29)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
     }
 
@@ -334,6 +334,61 @@ import MijiaCore
         #expect(contains(offArt(device, tint: device.category.color), type: JuicerArt.self))
         #expect(!contains(offArt(device, tint: device.category.color), type: CookerArt.self))
         #expect(!contains(offArt(device, tint: device.category.color), type: DishwasherArt.self))
+    }
+
+    @Test func ihcookerDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d31" })
+        #expect(device.category == .kitchen)
+        #expect(device.form == .ihcooker)
+        #expect(device.icon == "cooktop")
+        #expect(NSImage(systemSymbolName: device.icon, accessibilityDescription: nil) != nil)
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("厨房", "Kitchen"))
+        #expect(device.isOnline)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let status = try #require(context.p("status"))
+        #expect(status.format == "uint8")
+        #expect(!status.writable)
+        #expect(status.options?.map(\.description) == ["Heating", "Idle"])
+        let heatingOption = try #require(status.options?.first { $0.description == "Heating" })
+        #expect(context.num(status) == Double(heatingOption.value))
+        let heat = try #require(context.p("heat-level"))
+        #expect(heat.readable)
+        #expect(heat.writable)
+        #expect(heat.range == [1, 9, 1])
+        #expect(context.num(heat) == 5)
+        let mode = try #require(context.p("mode"))
+        #expect(mode.writable)
+        #expect(mode.options?.map(\.description) == ["Manual", "Soup"])
+        #expect(context.num(mode) == 0)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: device, state: state).body, type: IHCookerDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: CookerDetail.self))
+        #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
+        #expect(contains(offArt(device, tint: device.category.color), type: IHCookerArt.self))
+        #expect(!contains(offArt(device, tint: device.category.color), type: CookerArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "ihcooker" })
+        #expect(contains(gallery.1, type: IHCookerArt.self))
+        #expect(contains(gallery.2, type: IHCookerArt.self))
+    }
+
+    @Test func ihcookerFormDoesNotMatchGenericCooker() throws {
+        let model = AppModel(mock: true)
+        var device = try #require(model.devices.first { $0.did == "d31" })
+        for name in ["chunmi.ihcooker.v1", "CHUNMI.IHCOOKER.V2"] {
+            device.model = name
+            #expect(device.form == .ihcooker)
+        }
+        device.model = "chunmi.cooker.demo"
+        #expect(device.form == nil)
+        for (name, form) in [("dishwasher", DeviceForm.dishwasher), ("kettle", .kettle), ("juicer", .juicer)] {
+            device.model = "xiaomi.\(name).ihcooker"
+            #expect(device.form == form)
+        }
     }
 
     @Test func purifierDemoRoutingAndProps() throws {

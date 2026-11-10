@@ -26,6 +26,7 @@ struct TypeDetailView: View {
             if device.form == .kettle { KettleDetail(dc: dc) }
             else if device.form == .dishwasher { DishwasherDetail(dc: dc) }
             else if device.form == .juicer { JuicerDetail(dc: dc) }
+            else if device.form == .ihcooker { IHCookerDetail(dc: dc) }
             else { CookerDetail(dc: dc) }
         case .purifier: PurifierDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
@@ -92,6 +93,7 @@ struct DeviceStatusCard: View {
         if d.form == .kettle { KettleArt(boiling: false, tint: tint) }
         else if d.form == .dishwasher { DishwasherArt(washing: false, tint: tint) }
         else if d.form == .juicer { JuicerArt(blending: false, tint: tint) }
+        else if d.form == .ihcooker { IHCookerArt(heating: false, tint: tint) }
         else { CookerArt(cooking: false, tint: tint) }
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
@@ -322,7 +324,7 @@ struct PrinterDetail: View {
     }
 }
 
-// MARK: 厨房电器（多功能锅、电磁炉、料理机等）
+// MARK: 厨房电器
 struct CookerDetail: View {
     @EnvironmentObject var m: AppModel
     let dc: DC
@@ -385,6 +387,29 @@ struct JuicerDetail: View {
         } content: {
             BigValue(value: dc.text(status), caption: L("当前状态", "Status"))
             HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: device.icon, tint: tint)
+            }
+        }
+    }
+}
+
+struct IHCookerDetail: View {
+    let dc: DC
+    var body: some View {
+        let device = dc.device, tint = Color.orange
+        let status = dc.p("status")
+        let raw = dc.v(status).flatMap { value in status?.options?.first { Double($0.value) == value.doubleValue }?.description.lowercased() } ?? ""
+        let heating = ["heating", "cooking", "working", "busy", "running", "default"].contains(raw)
+        TypeShell(device: device, tint: tint, isOn: heating, title: heating ? L("加热中", "Heating") : (dc.text(status) ?? (device.isOnline ? L("在线", "Online") : L("离线", "Offline"))),
+                  subtitle: L("电磁炉", "Induction cooktop")) {
+            IHCookerArt(heating: heating, tint: tint)
+        } content: {
+            if let temperature = dc.num(dc.p("temperature")) {
+                BigValue(value: "\(Int(temperature))", unit: "°C", caption: L("温度", "Temperature"))
+            } else { BigValue(value: dc.text(status), caption: L("当前状态", "Status")) }
+            ReadoutRow(items: [("flame.fill", dc.num(dc.p("heat-level")).map { L("火力 ", "Heat ") + "\(Int($0))" })], tint: tint)
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("heat-level"), title: L("加热档位", "Heat level"), icon: "flame", tint: tint)
                 PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: device.icon, tint: tint)
             }
         }

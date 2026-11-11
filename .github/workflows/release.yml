@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.version || github.ref }}
@@ -208,6 +209,7 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:

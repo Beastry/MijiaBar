@@ -23,7 +23,7 @@ fi
 [ -n "${DMG_PATH:-}" ] && [ -f "$DMG_PATH" ] || { echo "❌ 找不到 DMG（设 DMG_PATH 或 VERSION）"; exit 1; }
 VERSION="${VERSION:-$(basename "$DMG_PATH" | sed -E 's/^MijiaBar-//; s/\.dmg$//; s/-unsigned$//')}"
 
-DOWNLOAD_URL="${DOWNLOAD_URL:-https://github.com/neardws/MijiaBar/releases/download/v${VERSION}/MijiaBar-${VERSION}.dmg}"
+DOWNLOAD_URL="${DOWNLOAD_URL:-https://github.com/Beastry/MijiaBar/releases/download/v${VERSION}/MijiaBar-${VERSION}.dmg}"
 
 STAGE=$(mktemp -d /tmp/mijiabar-appcast.XXXXXX)
 trap 'rm -rf "$STAGE"' EXIT
@@ -33,7 +33,7 @@ if [ -f "$NOTES" ]; then cp "$NOTES" "$STAGE/MijiaBar-$VERSION.md"; fi
 
 "$SP/bin/generate_appcast" \
   --ed-key-file "$KEY" \
-  --download-url-prefix "https://github.com/neardws/MijiaBar/releases/download/v${VERSION}/" \
+  --download-url-prefix "${DOWNLOAD_URL%/*}/" \
   --link "https://www.neardws.com/MijiaBar/" \
   --embed-release-notes \
   -o "$STAGE/appcast.xml" \

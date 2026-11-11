@@ -27,6 +27,7 @@ struct TypeDetailView: View {
             else if device.form == .dishwasher { DishwasherDetail(dc: dc) }
             else if device.form == .juicer { JuicerDetail(dc: dc) }
             else if device.form == .ihcooker { IHCookerDetail(dc: dc) }
+            else if device.form == .mfcp { MfcpDetail(dc: dc) }
             else { CookerDetail(dc: dc) }
         case .purifier: PurifierDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
@@ -94,6 +95,7 @@ struct DeviceStatusCard: View {
         else if d.form == .dishwasher { DishwasherArt(washing: false, tint: tint) }
         else if d.form == .juicer { JuicerArt(blending: false, tint: tint) }
         else if d.form == .ihcooker { IHCookerArt(heating: false, tint: tint) }
+        else if d.form == .mfcp { MfcpArt(cooking: false, tint: tint) }
         else { CookerArt(cooking: false, tint: tint) }
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
@@ -411,6 +413,32 @@ struct IHCookerDetail: View {
             HStack(spacing: 8) {
                 PropTile(dc: dc, prop: dc.p("heat-level"), title: L("加热档位", "Heat level"), icon: "flame", tint: tint)
                 PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: device.icon, tint: tint)
+            }
+        }
+    }
+}
+
+struct MfcpDetail: View {
+    let dc: DC
+    var cooking: Bool {
+        let status = dc.p("status")
+        let raw = dc.v(status).flatMap { value in status?.options?.first { Double($0.value) == value.doubleValue }?.description.lowercased() } ?? ""
+        return ["cooking", "heating", "boiling", "working", "busy", "running", "default", "keepwarm", "keep warm"].contains(raw)
+    }
+    var body: some View {
+        let device = dc.device, tint = Color.orange
+        let status = dc.p("status"), left = dc.num(dc.p("left-time"))
+        TypeShell(device: device, tint: tint, isOn: cooking, title: dc.text(status) ?? (device.isOnline ? L("在线", "Online") : L("离线", "Offline")),
+                  subtitle: joined([L("多功能料理锅", "Multifunction cooking pot"), dc.text(dc.p("mode"))])) {
+            MfcpArt(cooking: cooking, tint: tint)
+        } content: {
+            if let left, left > 0 { BigValue(value: "\(Int(left))", unit: L("分钟", "min"), caption: L("剩余时间", "Remaining")) }
+            else { BigValue(value: dc.text(status), caption: L("当前状态", "Status")) }
+            ReadoutRow(items: [("thermometer.medium", dc.num(dc.p("temperature")).map { "\(Int($0))°C" }),
+                               ("flame.fill", dc.num(dc.p("heat-level")).map { L("火力 ", "Heat ") + "\(Int($0))" })], tint: tint)
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("mode"), title: L("模式", "Mode"), icon: device.icon, tint: tint)
+                PropTile(dc: dc, prop: dc.p("heat-level"), title: L("加热档位", "Heat level"), icon: "flame", tint: tint)
             }
         }
     }

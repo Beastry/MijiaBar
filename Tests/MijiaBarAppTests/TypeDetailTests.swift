@@ -15,7 +15,7 @@ import MijiaCore
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 29)
+        #expect(ArtGallery.rows.count == 30)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
     }
 
@@ -389,6 +389,88 @@ import MijiaCore
             device.model = "xiaomi.\(name).ihcooker"
             #expect(device.form == form)
         }
+    }
+
+    @Test func mfcpDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d32" })
+        #expect(device.category == .kitchen)
+        #expect(device.form == .mfcp)
+        #expect(device.icon == "frying.pan")
+        #expect(device.homeId == "h2")
+        #expect(device.roomName == L("厨房", "Kitchen"))
+        #expect(device.isOnline)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let status = try #require(context.p("status"))
+        #expect(!status.writable)
+        #expect(status.options?.map(\.description) == ["Cooking", "Idle"])
+        #expect(context.num(status) == 1)
+        let mode = try #require(context.p("mode"))
+        #expect(mode.writable)
+        #expect(mode.options?.map(\.description) == ["Manual", "Soup"])
+        #expect(context.num(mode) == 1)
+        let left = try #require(context.p("left-time"))
+        #expect(!left.writable && left.unit == "minutes")
+        #expect(context.num(left) == 18)
+        let heat = try #require(context.p("heat-level"))
+        #expect(heat.writable && heat.range == [1, 5, 1])
+        #expect(context.num(heat) == 3)
+        #expect(context.num(context.p("temperature")) == 96)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> MfcpArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        for cooking in [true, false] {
+            state.values["2.1"] = .int(cooking ? 1 : 2)
+            state.values["2.3"] = .int(cooking ? 18 : 0)
+            let detail = MfcpDetail(dc: DC(device: device, state: state))
+            #expect(detail.cooking == cooking)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: MfcpDetail.self))
+            #expect(!contains(routed, type: CookerDetail.self))
+            #expect(!contains(routed, type: DeviceCardView.self))
+            #expect(contains(detail.body, type: MfcpArt.self))
+            #expect(!contains(detail.body, type: CookerArt.self))
+        }
+        #expect(contains(offArt(device, tint: device.category.color), type: MfcpArt.self))
+        #expect(!contains(offArt(device, tint: device.category.color), type: CookerArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "mfcp" })
+        #expect(ArtGallery.rows.filter { $0.0 == "mfcp" }.count == 1)
+        #expect(contains(gallery.1, type: MfcpArt.self))
+        #expect(contains(gallery.2, type: MfcpArt.self))
+        state.values.removeValue(forKey: "2.1")
+        #expect(!MfcpDetail(dc: DC(device: device, state: state)).cooking)
+        state.spec = nil
+        #expect(!MfcpDetail(dc: DC(device: device, state: state)).cooking)
+    }
+
+    @Test func mfcpFormDoesNotStealOtherKitchenForms() throws {
+        let model = AppModel(mock: true)
+        var device = try #require(model.devices.first { $0.did == "d32" })
+        for name in ["chunmi.mfcp.v1", "CHUNMI.MFCP.V2"] {
+            device.model = name
+            #expect(device.form == .mfcp)
+        }
+        device.model = "chunmi.cooker.demo"
+        #expect(device.form == nil)
+        let cooker = try #require(model.devices.first { $0.did == "d24" })
+        let state = try #require(model.states[cooker.did])
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: cooker, state: state).body, type: CookerDetail.self))
+        #expect(contains(offArt(cooker, tint: cooker.category.color), type: CookerArt.self))
+        for (name, form) in [("dishwasher", DeviceForm.dishwasher), ("kettle", .kettle), ("juicer", .juicer), ("ihcooker", .ihcooker)] {
+            for suffix in ["demo", "mfcp"] {
+                device.model = "xiaomi.\(name).\(suffix)"
+                #expect(device.form == form)
+                #expect(device.form != .mfcp)
+            }
+        }
+        device.model = "xiaomi.light.mfcp"
+        #expect(device.category != .kitchen)
+        #expect(device.form == nil)
     }
 
     @Test func purifierDemoRoutingAndProps() throws {

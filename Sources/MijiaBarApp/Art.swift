@@ -692,6 +692,52 @@ struct IHCookerArt: View {
     }
 }
 
+struct MfcpArt: View {
+    let cooking: Bool, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        PowerTimeline(on: cooking, running: true) { time, level in
+            let glow = level * (reduceMotion ? 1 : 0.92 + 0.08 * sin(time * 2))
+            ZStack {
+                Ambient(tint, glow * 0.6, width: 174, height: 100).position(x: 90, y: 83)
+                Capsule().fill(darkGlass).frame(width: 102, height: 5).position(x: 90, y: 121)
+                RoundedRectangle(cornerRadius: 8, style: .continuous).appliance(tint, level)
+                    .frame(width: 116, height: 23).position(x: 90, y: 108)
+                RoundedRectangle(cornerRadius: 4).fill(darkGlass)
+                    .frame(width: 42, height: 12).position(x: 90, y: 109)
+                Capsule().fill(tint).frame(width: 18, height: 2).opacity(0.15 + level * 0.85).position(x: 86, y: 109)
+                Circle().fill(aluminum).frame(width: 4, height: 4).position(x: 103, y: 109)
+                ForEach([24.0, 156.0], id: \.self) { horizontal in
+                    RoundedRectangle(cornerRadius: 5).stroke(aluminum, lineWidth: 6)
+                        .frame(width: 24, height: 13).position(x: horizontal, y: 73)
+                }
+                RoundedRectangle(cornerRadius: 17, style: .continuous).appliance(tint, level)
+                    .frame(width: 128, height: 45).position(x: 90, y: 80)
+                Ellipse().fill(darkGlass).frame(width: 128, height: 14).position(x: 90, y: 59)
+                Ellipse().stroke(tint.opacity(glow * 0.7), lineWidth: 3)
+                    .frame(width: 124, height: 12).position(x: 90, y: 58)
+                Path { path in
+                    path.move(to: CGPoint(x: 28, y: 56))
+                    path.addCurve(to: CGPoint(x: 152, y: 56), control1: CGPoint(x: 39, y: 22), control2: CGPoint(x: 141, y: 22))
+                    path.addQuadCurve(to: CGPoint(x: 28, y: 56), control: CGPoint(x: 90, y: 69))
+                    path.closeSubpath()
+                }
+                .appliance(tint, level)
+                Capsule().fill(aluminum).frame(width: 124, height: 3).position(x: 90, y: 57)
+                Capsule().fill(darkGlass).frame(width: 26, height: 8).position(x: 90, y: 30)
+                ForEach(0..<4) { index in
+                    let phase = (time * (reduceMotion ? 0 : 0.3) + Double(index) / 4).truncatingRemainder(dividingBy: 1)
+                    Capsule().fill(tint.opacity(0.55)).frame(width: 2, height: 9)
+                        .offset(x: sin(phase * 6) * 3, y: -phase * 22)
+                        .opacity(level * sin(phase * .pi))
+                        .position(x: index < 2 ? 36 : 144, y: 49)
+                }
+            }
+            .frame(width: 180, height: 136)
+        }
+    }
+}
+
 struct KettleArt: View {
     let boiling: Bool, tint: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

@@ -46,6 +46,7 @@ extension AppModel {
             dev("d29", L("洗碗机", "Dishwasher"), "viomi.dishwasher.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d30", L("榨汁机", "Juicer"), "xiaomi.juicer.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d31", L("电磁炉", "Induction cooktop"), "chunmi.ihcooker.demo", L("厨房", "Kitchen"), home: "h2"),
+            dev("d32", L("多功能料理锅", "Cooking pot"), "chunmi.mfcp.demo", L("厨房", "Kitchen"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -194,6 +195,13 @@ extension AppModel {
             P(2, 2, "heat-level", "uint8", range: [1, 9, 1]),
             P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Manual"), ValueOption(value: 1, description: "Soup")])])])
         states["d31"] = DeviceState(values: ["2.1": .int(1), "2.2": .int(5), "2.3": .int(0)], spec: ihcooker, legacy: false, source: "cloud")
+        let mfcp = DeviceSpec(type: "", description: "", services: [S(2, "mfcp", [
+            P(2, 1, "status", "uint8", ["read"], opts: [ValueOption(value: 1, description: "Cooking"), ValueOption(value: 2, description: "Idle")]),
+            P(2, 2, "mode", "uint8", opts: [ValueOption(value: 0, description: "Manual"), ValueOption(value: 1, description: "Soup")]),
+            P(2, 3, "left-time", "uint16", ["read"], unit: "minutes"),
+            P(2, 4, "heat-level", "uint8", range: [1, 5, 1]),
+            P(2, 5, "temperature", "uint8", ["read"], unit: "celsius")])])
+        states["d32"] = DeviceState(values: ["2.1": .int(1), "2.2": .int(1), "2.3": .int(18), "2.4": .int(3), "2.5": .int(96)], spec: mfcp, legacy: false, source: "cloud")
         let purifier = DeviceSpec(type: "", description: "", services: [S(2, "water-purifier", [
             P(2, 1, "tds-out", "uint16", ["read"], unit: "ppm"),
             P(2, 2, "tds-in", "uint16", ["read"], unit: "ppm"),
@@ -227,6 +235,7 @@ struct ArtGallery: View {
             ("dishwasher", AnyView(DishwasherArt(washing: true, tint: .orange)), AnyView(DishwasherArt(washing: false, tint: .orange))),
             ("juicer", AnyView(JuicerArt(blending: true, tint: .orange)), AnyView(JuicerArt(blending: false, tint: .orange))),
             ("ihcooker", AnyView(IHCookerArt(heating: true, tint: .orange)), AnyView(IHCookerArt(heating: false, tint: .orange))),
+            ("mfcp", AnyView(MfcpArt(cooking: true, tint: .orange)), AnyView(MfcpArt(cooking: false, tint: .orange))),
             ("purifier", AnyView(PurifierArt(on: true, filter: 72, tint: .blue)), AnyView(PurifierArt(on: false, filter: 72, tint: .blue))),
             ("heater", AnyView(HeaterArt(on: true, level: 0.6, tint: Theme.heat)), AnyView(HeaterArt(on: false, level: 0.6, tint: Theme.heat))),
             ("dehumidifier", AnyView(DehumidifierArt(on: true, level: 0.4, tint: .cyan)), AnyView(DehumidifierArt(on: false, level: 0.4, tint: .cyan))),
@@ -414,6 +423,9 @@ enum Snapshot {
             m.page = .detail("d31"); render(root, f("ihcooker"))
             m.states["d31"]?.values["2.1"] = .int(2); render(root, f("ihcooker-idle"))
             m.states["d31"]?.values["2.1"] = .int(1)
+            m.page = .detail("d32"); render(root, f("mfcp"))
+            m.states["d32"]?.values["2.1"] = .int(2); m.states["d32"]?.values["2.3"] = .int(0); render(root, f("mfcp-idle"))
+            m.states["d32"]?.values["2.1"] = .int(1); m.states["d32"]?.values["2.3"] = .int(18)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))
             m.page = .detail("d27"); render(root, f("printer"))

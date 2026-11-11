@@ -3,30 +3,47 @@
 #   有 Developer ID 证书时：hardened runtime 签名 → 公证 → staple
 #   没有证书时：ad-hoc 签名，DMG 文件名带 -unsigned
 # 环境变量：
-#   VERSION         版本号（默认 0.1.15）
+#   VERSION         版本号（默认读取 docs/VERSION）
 #   ARCHS           默认 "--arch arm64 --arch x86_64"
 #   SIGN_IDENTITY   签名身份；默认自动找 "Developer ID Application"，设为 "-" 强制 ad-hoc
-#   NOTARY_PROFILE  notarytool 钥匙串配置名（默认 MijiaBar-notary）；设为空跳过公证
+#   KEYCHAIN        可选签名钥匙串，用于查找身份和 codesign
+#   NOTARY_PROFILE  默认 MijiaBar-notary；显式设为空且无 ASC 配置时跳过公证
+#   ASC_API_KEY_PATH / ASC_API_KEY_ID / ASC_API_ISSUER_ID  全部设置时优先用 API 密钥公证
+#   REQUIRE_NOTARIZATION  设为 1 时，真实签名必须有公证配置（ad-hoc 不受影响）
 #   SKIP_APPCAST    设为 1 时跳过 appcast 生成
+#   HOUSE_STYLE_BUNDLE  all（默认）或 default
 set -euo pipefail
 cd "$(dirname "$0")/.."
 HOUSE_STYLE_BUNDLE="${HOUSE_STYLE_BUNDLE:-all}"
 case "$HOUSE_STYLE_BUNDLE" in all|default) ;; *) echo "Invalid HOUSE_STYLE_BUNDLE: $HOUSE_STYLE_BUNDLE" >&2; exit 1 ;; esac
 export HOUSE_STYLE_BUNDLE
-VERSION="${VERSION:-0.1.15}"
+VERSION="${VERSION:-$(cat docs/VERSION)}"
 ARCHS="${ARCHS:---arch arm64 --arch x86_64}"
 NOTARY_PROFILE="${NOTARY_PROFILE-MijiaBar-notary}"
 ENT=Resources/MijiaBar.entitlements
 APP=dist/MijiaBar.app
+KEYCHAIN_ARGS=()
+[ -z "${KEYCHAIN:-}" ] || KEYCHAIN_ARGS=(--keychain "$KEYCHAIN")
+NOTARY_ARGS=()
+if [ -n "${ASC_API_KEY_PATH:-}" ] && [ -n "${ASC_API_KEY_ID:-}" ] && [ -n "${ASC_API_ISSUER_ID:-}" ]; then
+  NOTARY_ARGS=(--key "$ASC_API_KEY_PATH" --key-id "$ASC_API_KEY_ID" --issuer "$ASC_API_ISSUER_ID")
+elif [ -n "$NOTARY_PROFILE" ]; then
+  NOTARY_ARGS=(--keychain-profile "$NOTARY_PROFILE")
+fi
 
 if [ -z "${SIGN_IDENTITY:-}" ]; then
-  SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -o '"Developer ID Application:[^"]*"' | head -1 | tr -d '"' || true)
+  IDENTITY_ARGS=()
+  [ -z "${KEYCHAIN:-}" ] || IDENTITY_ARGS=("$KEYCHAIN")
+  SIGN_IDENTITY=$(security find-identity -v -p codesigning ${IDENTITY_ARGS[@]+"${IDENTITY_ARGS[@]}"} 2>/dev/null | grep -o '"Developer ID Application:[^"]*"' | head -1 | tr -d '"' || true)
   [ -z "$SIGN_IDENTITY" ] && SIGN_IDENTITY="-"
 fi
 if [ "$SIGN_IDENTITY" = "-" ]; then
   DMG="dist/MijiaBar-$VERSION-unsigned.dmg"; echo "⚠️  未找到 Developer ID，使用 ad-hoc 签名"
 else
   DMG="dist/MijiaBar-$VERSION.dmg"; echo "🔏 签名身份: $SIGN_IDENTITY"
+  if [ "${REQUIRE_NOTARIZATION:-0}" = "1" ] && [ "${#NOTARY_ARGS[@]}" = "0" ]; then
+    echo "❌ REQUIRE_NOTARIZATION=1，但未配置 NOTARY_PROFILE 或完整的 ASC API 密钥" >&2; exit 1
+  fi
 fi
 
 # 内置 go2rtc（MIT，github.com/AlexxIT/go2rtc）：构建时下载官方发布包并校验 SHA-256，二进制不进仓库
@@ -94,8 +111,8 @@ sed "s/__VERSION__/$VERSION/g" Resources/Info.plist > "$APP/Contents/Info.plist"
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/MijiaBar" 2>/dev/null || true
 
 sign() {
-  if [ "$SIGN_IDENTITY" = "-" ]; then codesign --force --sign - --timestamp=none "$@"
-  else codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp "$@"; fi
+  if [ "$SIGN_IDENTITY" = "-" ]; then codesign --force --sign - --timestamp=none ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} "$@"
+  else codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} "$@"; fi
 }
 # 由内向外签名：先 helpers / framework，再 app
 sign --identifier com.neardws.MijiaBar.cli --entitlements "$ENT" "$APP/Contents/Resources/bin/mijiabar"
@@ -123,11 +140,11 @@ hdiutil create -volname "MijiaBar" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >
 rm -rf "$STAGE"
 
 if [ "$SIGN_IDENTITY" != "-" ]; then
-  codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG"
-  if [ -n "$NOTARY_PROFILE" ]; then
+  codesign --force --sign "$SIGN_IDENTITY" --timestamp ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} "$DMG"
+  if [ "${#NOTARY_ARGS[@]}" != "0" ]; then
     echo "📮 提交公证…"
-    xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait | tee dist/notary.log
-    grep -q "status: Accepted" dist/notary.log || { echo "❌ 公证失败，用 xcrun notarytool log <id> --keychain-profile $NOTARY_PROFILE 查看"; exit 1; }
+    xcrun notarytool submit "$DMG" "${NOTARY_ARGS[@]}" --wait | tee dist/notary.log
+    grep -q "status: Accepted" dist/notary.log || { echo "❌ 公证失败，用相同凭据执行 xcrun notarytool log <id> 查看"; exit 1; }
     xcrun stapler staple "$APP"
     xcrun stapler staple "$DMG"
     xcrun stapler validate "$DMG"

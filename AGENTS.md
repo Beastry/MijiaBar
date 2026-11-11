@@ -18,7 +18,7 @@ MijiaBar is a macOS menu bar app (SwiftUI, macOS 14+) that controls Xiaomi Mi Ho
 
 ## Sparkle updates
 
-In-app updates use Sparkle 2 (`SUFeedURL` → GitHub Pages `docs/appcast.xml`). The EdDSA **private** key lives only at `~/mijiabar-private/sparkle/eddsa_priv.key` on the maintainer Mac — never commit it. See [`docs/UPDATING.md`](docs/UPDATING.md).
+In-app updates use Sparkle 2 (`SUFeedURL` → GitHub Pages `docs/appcast.xml`). The EdDSA **private** key is backed up at `~/mijiabar-private/sparkle/eddsa_priv.key` on the maintainer Mac — never commit it. The **Release** workflow can build signed/notarized draft releases using repository Actions secrets, including MijiaBar's own Sparkle key; publishing and committing the generated feed remain manual. See [`docs/UPDATING.md`](docs/UPDATING.md).
 
 ## Build and check
 

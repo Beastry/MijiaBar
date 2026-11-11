@@ -56,7 +56,7 @@ DMG 压缩、文件系统分配与签名都会影响最终大小。本次仅测�
 | `SUFeedURL` | `https://www.neardws.com/MijiaBar/appcast.xml` |
 | `SUPublicEDKey` | `CCM7RPQimyjvvf3oCtszbmQ1hQArwEl1FwPQTVLolb4=`（公钥，可提交） |
 
-**私钥**只在维护者机器上：
+**私钥**保存在维护者机器上，并可配置为仓库 Actions secret（不进入源码）：
 
 ```
 ~/mijiabar-private/sparkle/eddsa_priv.key
@@ -66,10 +66,60 @@ Keychain 账户名：`mijiabar`。切勿把私钥或 `~/mijiabar-private/` 提�
 
 ### 发版流程
 
-1. `VERSION=x.y.z scripts/package.sh` — 签名、公证、生成 `docs/appcast.xml`
-2. 把公证后的 `dist/MijiaBar-x.y.z.dmg` 上传到 GitHub Release `v x.y.z`
-3. 运行 `python3 scripts/gen-site.py`（网页里的版本号取自 appcast），把更新后的 `docs/appcast.xml` 和 `docs/*.html` 提交并推送到 `main`，GitHub Pages 会托管 appcast
-4. 已安装 **带 Sparkle 的构建**（≥ 本次）的用户会自动/手动检查到更新
+1. 首选 GitHub Actions → **Release** → **Run workflow**（`workflow_dispatch`），选择要发布的提交所在分支。`version` 不带 `v`；留空读取 `docs/VERSION`，也可在版本文件更新前显式填 `0.1.16`。`draft-release` 默认开启。
+2. 工作流在 `macos-15` / Xcode 16 上签名、公证、staple 并验证 DMG；产物名带版本和 `adhoc` / `signed` / `notarized` 模式。只有公证成功且 `draft-release=true` 时才附加到 `v<version>` **草稿**。已有草稿只覆盖资产；已有正式发布则失败，不修改它。
+3. 维护者下载产物核对 DMG、SHA-256、`notary.log` 和生成的 `appcast.xml`（需要 Sparkle secret），审核发布说明后，**手动发布草稿**。工作流从不发布、不推 tag；新草稿用所选提交作为目标，正式发布时由人确认 tag。关闭 `draft-release` 时仅保留 Actions 产物。
+4. Release 正式可下载后，维护者将产物中的 `appcast.xml` 放回 `docs/appcast.xml`，把 `docs/VERSION` 更新为相同版本，再运行 `python3 scripts/gen-site.py`。将这三个部分（feed、VERSION、生成的 `docs/index.html` / `docs/zh-CN.html`）提交并推送到 `main`，Pages 才会提供新的更新 feed。**不要提前提交指向草稿资产的 appcast**；工作流不自动提交这些文件。
+5. 已安装带 Sparkle 构建的用户可自动或手动检查到更新。enclosure 现使用 `https://github.com/Beastry/MijiaBar/releases/download/v<version>/…`；旧的 `neardws/MijiaBar` 下载链接仍重定向。网站与 feed 地址不变。
+
+PR 仅在 Release workflow、打包 / appcast / 校验及 Sparkle 获取脚本变化时进行 ad-hoc dry run，**不使用 secrets**。原 `build.yml` 继续构建 unsigned DMG，并在 tag 上附加 `-unsigned` 资产；Release workflow 不监听 tag push，避免两条工作流竞争签名资产。
+
+### Actions secrets
+
+在 `Beastry/MijiaBar` → Settings → Secrets and variables → Actions 配置：
+
+| Secret 名称 | 用途 |
+| --- | --- |
+| `DEVELOPER_ID_P12_BASE64` | Developer ID Application 证书与私钥的 P12，base64 编码 |
+| `DEVELOPER_ID_P12_PASSWORD` | P12 导出密码 |
+| `DEVELOPER_ID_IDENTITY` | 完整签名身份，末尾为 `(APPLE_TEAM_ID)` |
+| `APPLE_TEAM_ID` | 校验签名身份的 Apple 团队 ID |
+| `KEYCHAIN_PASSWORD` | 临时钥匙串密码；未设时工作流随机生成 |
+| `ASC_API_KEY_ID` | App Store Connect API key ID |
+| `ASC_API_ISSUER_ID` | API issuer ID |
+| `ASC_API_KEY_P8_BASE64` | API P8 私钥，base64 编码 |
+| `SPARKLE_ED_PRIVATE_KEY` | **MijiaBar 自己的** EdDSA 私钥文本，不是 Stow 的密钥；公钥必须匹配上面的 `SUPublicEDKey` |
+
+以下均为占位符，实际值通过 stdin 交给 `gh`，不要写入源码或 shell 历史：
+
+```bash
+printf '%s' '<P12_BASE64>' | gh secret set DEVELOPER_ID_P12_BASE64 --repo Beastry/MijiaBar
+printf '%s' '<P12_PASSWORD>' | gh secret set DEVELOPER_ID_P12_PASSWORD --repo Beastry/MijiaBar
+printf '%s' '<DEVELOPER_ID_APPLICATION_IDENTITY>' | gh secret set DEVELOPER_ID_IDENTITY --repo Beastry/MijiaBar
+printf '%s' '<APPLE_TEAM_ID>' | gh secret set APPLE_TEAM_ID --repo Beastry/MijiaBar
+printf '%s' '<TEMP_KEYCHAIN_PASSWORD>' | gh secret set KEYCHAIN_PASSWORD --repo Beastry/MijiaBar
+printf '%s' '<ASC_KEY_ID>' | gh secret set ASC_API_KEY_ID --repo Beastry/MijiaBar
+printf '%s' '<ASC_ISSUER_ID>' | gh secret set ASC_API_ISSUER_ID --repo Beastry/MijiaBar
+printf '%s' '<P8_BASE64>' | gh secret set ASC_API_KEY_P8_BASE64 --repo Beastry/MijiaBar
+printf '%s' '<MIJIABAR_EDDSA_PRIVATE_KEY>' | gh secret set SPARKLE_ED_PRIVATE_KEY --repo Beastry/MijiaBar
+```
+
+不要把占位符替换成真实值后粘贴执行（会进入 shell 历史）；实际配置应使用密码管理器安全导出到 stdin，或运行不带输入重定向的 `gh secret set <NAME> --repo Beastry/MijiaBar` 交互输入。
+
+缺少签名三项（P12、密码、身份）时降级为 ad-hoc；签名可用但 ASC 三项不全时只签名、不公证、不建草稿；签名时 `APPLE_TEAM_ID` 缺失或身份不匹配会失败。缺少 Sparkle secret 不阻止公证和草稿，但不生成 appcast，也不会自动更新用户。临时钥匙串、P12、P8 和 Sparkle 私钥文件在 `always()` 清理步骤删除。
+
+### 本机备用路径（Mac mini A）
+
+Mac mini A 仍是备用签名机：Developer ID 在 login keychain，Sparkle 私钥位于 `~/mijiabar-private/sparkle/eddsa_priv.key`，本地 notarytool profile 为 `MijiaBar-notary`。**不要把签名迁移到工作 Mac。** profile 丢失时，在 Mac mini A 上交互运行以下命令恢复（使用 Apple ID / App 专用密码，或 `store-credentials` 支持的 API key 参数；不要把密码写进命令行）：
+
+```bash
+xcrun notarytool store-credentials MijiaBar-notary
+VERSION=x.y.z scripts/package.sh
+```
+
+本机路径会签名、公证并生成 `docs/appcast.xml`，随后人工上传 DMG 到 Release、正式发布，再按上述步骤更新 `docs/VERSION`、feed 和网站。`VERSION` 未设时读取 `docs/VERSION`；`SIGN_IDENTITY` 默认自动查找 Developer ID，`SIGN_IDENTITY=-` 强制 ad-hoc。
+
+`KEYCHAIN` 可指定签名钥匙串。公证优先使用完整的 `ASC_API_KEY_PATH` / `ASC_API_KEY_ID` / `ASC_API_ISSUER_ID`，否则用默认 `NOTARY_PROFILE=MijiaBar-notary`；显式设 `NOTARY_PROFILE=` 且无完整 API 配置会跳过公证。`REQUIRE_NOTARIZATION=1` 在真实签名但无公证配置时提前失败（配置无效或公证失败也会退出），ad-hoc 不受影响。`SKIP_APPCAST=1` 可将 feed 生成留待后续步骤；`HOUSE_STYLE_BUNDLE` 行为不变。
 
 ### 从 0.1.8 迁移
 

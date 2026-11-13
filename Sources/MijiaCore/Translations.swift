@@ -433,6 +433,7 @@ public let hantTable: [String: String] = [
     "更新通过 GitHub Pages 的 appcast 分发，安装包经苹果公证并用 EdDSA 签名。": "更新透過 GitHub Pages 的 appcast 發佈，安裝包經蘋果公證並以 EdDSA 簽名。",
     "下载页": "下載頁",
     "已打开": "已打開",
+    "墙壁开关": "牆壁開關",
     "门窗传感器": "門窗感測器",
     "水浸传感器": "水浸感測器",
     "检测到浸水": "偵測到浸水",

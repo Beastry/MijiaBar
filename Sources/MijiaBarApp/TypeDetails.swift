@@ -17,7 +17,9 @@ struct TypeDetailView: View {
         case .waterHeater: WaterHeaterDetail(dc: dc)
         case .curtain: CurtainDetail(dc: dc)
         case .light: LightDetail(dc: dc)
-        case .plug: PlugDetail(dc: dc)
+        case .plug:
+            if device.form == .wallSwitch { WallSwitchDetail(dc: dc) }
+            else { PlugDetail(dc: dc) }
         case .tv: TVDetail(dc: dc)
         case .speaker: SpeakerDetail(dc: dc)
         case .camera: CameraDetail(dc: dc)
@@ -85,7 +87,9 @@ struct DeviceStatusCard: View {
     case .ac: ACIllustration(on: false, tint: tint)
     case .fan: FanArt(on: false, level: 0.5, swing: false, tint: tint)
     case .light: BulbArt(on: false, brightness: 0.7, kelvin: nil)
-    case .plug: PlugArt(on: false, watts: nil, tint: tint)
+    case .plug:
+        if d.form == .wallSwitch { WallSwitchArt(on: false, tint: tint) }
+        else { PlugArt(on: false, watts: nil, tint: tint) }
     case .tv: TVArt(on: false, playing: false, tint: tint)
     case .speaker: SpeakerArt(playing: false, volume: 0.5, tint: tint)
     case .camera: if d.form == .doorbell { DoorbellArt(on: false, tint: tint) } else { CameraArt(on: false, tint: tint) }
@@ -212,6 +216,25 @@ struct PlugDetail: View {
                            presets: [(L("断电", "Off"), 0), (L("通电", "On"), 1), (L("记忆", "Last"), 2)])
             }
             PowerHistoryCard(device: d, tint: tint)
+        }
+    }
+}
+
+struct WallSwitchDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var on: Bool { dc.bool(dc.spec?.mainOnProperty) ?? false }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on, title: on ? L("已打开", "On") : L("已关闭", "Off"),
+                  subtitle: L("墙壁开关", "Wall switch"), powerOn: on,
+                  onPower: dc.spec?.mainOnProperty.map { prop in { m.write(device, prop.key, .bool(!on)) } }) {
+            WallSwitchArt(on: on, tint: tint)
+        } content: {
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("on", in: "indicator-light") ?? dc.p("indicator-light"), title: L("指示灯", "Indicator"), icon: "lightbulb.led", tint: tint)
+                PropTile(dc: dc, prop: dc.p("physical-controls-locked"), title: L("童锁", "Child lock"), icon: "lock", tint: tint)
+            }
         }
     }
 }

@@ -15,8 +15,103 @@ import MijiaCore
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 30)
+        #expect(ArtGallery.rows.count == 31)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func wallSwitchDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d33" })
+        #expect(device.model == "lumi.switch.demo")
+        #expect(device.category == .plug && device.form == .wallSwitch)
+        #expect(device.homeId == "h2" && device.roomName == L("客厅", "Living room"))
+        #expect(device.isOnline && device.icon == "lightswitch.on")
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let power = try #require(context.spec?.mainOnProperty)
+        #expect(power.key == "2.1" && power.writable && power.format == "bool")
+        #expect(context.bool(power) == true)
+        #expect(model.powerInfo(device)?.key == power.key)
+        let indicator = try #require(context.p("on", in: "indicator-light"))
+        let lock = try #require(context.p("physical-controls-locked"))
+        #expect(indicator.writable && indicator.format == "bool" && context.bool(indicator) == true)
+        #expect(lock.writable && lock.format == "bool" && context.bool(lock) == false)
+        #expect(context.p("electric-power") == nil && context.p("power-consumption") == nil)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> WallSwitchArt { return contains(art(), type: type) }
+            if let content = value as? () -> HStack<TupleView<(PropTile, PropTile)>> { return contains(content(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        func tiles(_ value: Any) -> [PropTile] {
+            if let tile = value as? PropTile { return [tile] }
+            if let content = value as? () -> HStack<TupleView<(PropTile, PropTile)>> { return tiles(content()) }
+            return Mirror(reflecting: value).children.flatMap { tiles($0.value) }
+        }
+        #expect(tiles(WallSwitchDetail(dc: context).body).compactMap(\.prop) == [indicator, lock])
+        state.spec = DeviceSpec(type: "", description: "", services: [
+            SpecService(iid: 2, type: "urn:miot-spec-v2:service:switch:0", description: "", properties: [power], actions: [])])
+        let minimal = WallSwitchDetail(dc: DC(device: device, state: state))
+        #expect(minimal.on)
+        let absent = tiles(minimal.body)
+        #expect(absent.count == 2 && absent.allSatisfy { $0.prop == nil })
+        #expect(absent.allSatisfy { !contains($0.body, type: ToggleTile.self) })
+        state = try #require(model.states[device.did])
+        for on in [true, false] {
+            state.values[power.key] = .bool(on)
+            let detail = WallSwitchDetail(dc: DC(device: device, state: state))
+            #expect(detail.on == on)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: WallSwitchDetail.self))
+            #expect(!contains(routed, type: PlugDetail.self))
+            #expect(!contains(routed, type: DeviceCardView.self))
+            #expect(contains(detail.body, type: WallSwitchArt.self))
+            #expect(!contains(detail.body, type: PlugArt.self))
+            #expect(!contains(detail.body, type: GenericArt.self))
+            #expect(!contains(detail.body, type: PowerHistoryCard.self))
+            #expect(!contains(detail.body, type: BigValue.self))
+        }
+        let idle = offArt(device, tint: device.category.color)
+        #expect(contains(idle, type: WallSwitchArt.self))
+        #expect(!contains(idle, type: PlugArt.self) && !contains(idle, type: GenericArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "wall-switch" })
+        #expect(ArtGallery.rows.filter { $0.0 == "wall-switch" }.count == 1)
+        #expect(contains(gallery.1, type: WallSwitchArt.self) && contains(gallery.2, type: WallSwitchArt.self))
+        state.values.removeValue(forKey: power.key)
+        #expect(!WallSwitchDetail(dc: DC(device: device, state: state)).on)
+        state.spec = nil
+        let missing = WallSwitchDetail(dc: DC(device: device, state: state))
+        #expect(!missing.on)
+        #expect(contains(missing.body, type: WallSwitchArt.self))
+    }
+
+    @Test func wallSwitchFormDoesNotStealPlugsOrOtherCategories() throws {
+        let model = AppModel(mock: true)
+        var device = try #require(model.devices.first { $0.did == "d33" })
+        for name in ["lumi.switch.acn11", "lumi.ctrl_neutral1", "lumi.ctrl_ln1.aq1", "LUMI.SWITCH.ACN11", "LUMI.CTRL_NEUTRAL2", "LUMI.CTRL_LN2.AQ1"] {
+            device.model = name
+            #expect(device.category == .plug && device.form == .wallSwitch, "\(name)")
+        }
+        for name in ["chuangmi.plug.m1", "cuco.plug.v3", "cuco.plug.switch.demo", "lumi.outlet.ctrl_neutral1", "lumi.plug.ctrl_ln1", "lumi.outlet.switch.demo", "lumi.switchless.demo"] {
+            device.model = name
+            #expect(device.category == .plug && device.form == nil, "\(name)")
+        }
+        for name in ["xiaomi.printer.switch.demo", "lumi.curtain.ctrl_neutral1", "xiaomi.fridge.ctrl_ln1"] {
+            device.model = name
+            #expect(device.category != .plug && device.form != .wallSwitch, "\(name)")
+        }
+        let plug = try #require(model.devices.first { $0.did == "d5" })
+        #expect(plug.category == .plug && plug.form == nil)
+        #expect(plug.icon == plug.category.icon)
+        let state = try #require(model.states[plug.did])
+        let context = DC(device: plug, state: state)
+        #expect(context.num(context.p("electric-power")) == 36.5)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        #expect(contains(TypeDetailView(device: plug, state: state).body, type: PlugDetail.self))
+        #expect(!contains(TypeDetailView(device: plug, state: state).body, type: WallSwitchDetail.self))
+        #expect(contains(offArt(plug, tint: plug.category.color), type: PlugArt.self))
+        #expect(!contains(offArt(plug, tint: plug.category.color), type: WallSwitchArt.self))
     }
 
     @Test func thermoDemoRoutingAndProps() throws {

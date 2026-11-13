@@ -98,7 +98,7 @@ public enum DeviceCategory: String, Codable, CaseIterable, Sendable {
         if has("heater") { return .heater }
         if has("derh", "dehumid") { return .dehumidifier }
         if has(".fan.") { return .fan }
-        if has("plug", "switch", "outlet") { return .plug }
+        if has("plug", "switch", "outlet", "ctrl_neutral", "ctrl_ln") { return .plug }
         if has("light", "lamp", "bulb", "ceiling") { return .light }
         if has("sensor", "motion", "flood", "magnet", "weather") { return .sensor }
         if has(".tv.") { return .tv }

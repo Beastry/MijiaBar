@@ -253,6 +253,31 @@ struct BulbGlass: Shape {
     }
 }
 
+struct WallSwitchArt: View {
+    let on: Bool, tint: Color
+    var body: some View {
+        ZStack {
+            Ambient(tint, on ? 0.35 : 0, width: 170, height: 128)
+            RoundedRectangle(cornerRadius: 12).appliance(tint, on ? 0.3 : 0)
+                .frame(width: 116, height: 116)
+            RoundedRectangle(cornerRadius: 7).fill(Color.black.opacity(0.18))
+                .frame(width: 92, height: 94)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(LinearGradient(colors: on ? [Color(white: 0.88), .white] : [.white, Color(white: 0.78)], startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.stroke, lineWidth: 1))
+                .overlay(alignment: on ? .bottom : .top) {
+                    RoundedRectangle(cornerRadius: 1).fill(on ? tint.opacity(0.65) : Color.primary.opacity(0.12))
+                        .frame(width: 62, height: 2).padding(.vertical, 5)
+                }
+                .frame(width: 88, height: 88).offset(y: on ? -2 : 2)
+            Capsule().fill(on ? tint : Color(white: 0.55)).frame(width: 14, height: 3).offset(y: 27)
+            Glow(tint, on ? 0.6 : 0, diameter: 12, softness: 5).offset(y: 27)
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 /// 智能插座：白色亮面插座本体 + 指示灯，插着一个插头，电线通向用电器徽标。
 /// 通电时指示灯亮、电流粒子沿电线流向用电器，功率越大越快越亮；断电后 0.6 秒渐隐。
 struct PlugArt: View {

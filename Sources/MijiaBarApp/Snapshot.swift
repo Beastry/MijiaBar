@@ -47,6 +47,7 @@ extension AppModel {
             dev("d30", L("榨汁机", "Juicer"), "xiaomi.juicer.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d31", L("电磁炉", "Induction cooktop"), "chunmi.ihcooker.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d32", L("多功能料理锅", "Cooking pot"), "chunmi.mfcp.demo", L("厨房", "Kitchen"), home: "h2"),
+            dev("d33", L("墙壁开关", "Wall switch"), "lumi.switch.demo", L("客厅", "Living room"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -75,6 +76,10 @@ extension AppModel {
         Recorder.shared.seed("d12", "contact", Self.demoToggles()); Recorder.shared.seed("d13", "leak", Self.demoToggles(start: 0))
         Recorder.shared.seed("d26", "illumination", Self.demoWave(320, 120))
         states["d5"] = DeviceState(values: ["2.1": .bool(true), "11.2": .double(36.5)], spec: plug, legacy: false, source: "cloud")
+        let wallSwitch = DeviceSpec(type: "", description: "", services: [S(2, "switch", [
+            P(2, 1, "on", "bool"), P(2, 2, "physical-controls-locked", "bool")]),
+            S(3, "indicator-light", [P(3, 1, "on", "bool")])])
+        states["d33"] = DeviceState(values: ["2.1": .bool(true), "2.2": .bool(false), "3.1": .bool(true)], spec: wallSwitch, legacy: false, source: "cloud")
         let ht = DeviceSpec(type: "", description: "", services: [S(2, "temperature-humidity-sensor", [P(2, 1, "temperature", "float", ["read"], unit: "celsius"), P(2, 2, "relative-humidity", "uint8", ["read"], unit: "percentage")])])
         states["d6"] = DeviceState(values: ["2.1": .double(25.6), "2.2": .int(58)], spec: ht, legacy: false, source: "cloud")
         let derh = DeviceSpec(type: "", description: "", services: [S(2, "dehumidifier", [
@@ -226,6 +231,7 @@ struct ArtGallery: View {
             ("fan", AnyView(FanArt(on: true, level: 0.5, swing: false, tint: .teal)), AnyView(FanArt(on: false, level: 0.5, swing: false, tint: .teal))),
             ("bulb", AnyView(BulbArt(on: true, brightness: 0.7, kelvin: 3800)), AnyView(BulbArt(on: false, brightness: 0.7, kelvin: 3800))),
             ("plug", AnyView(PlugArt(on: true, watts: 36, tint: .green)), AnyView(PlugArt(on: false, watts: 36, tint: .green))),
+            ("wall-switch", AnyView(WallSwitchArt(on: true, tint: .green)), AnyView(WallSwitchArt(on: false, tint: .green))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -426,6 +432,9 @@ enum Snapshot {
             m.page = .detail("d32"); render(root, f("mfcp"))
             m.states["d32"]?.values["2.1"] = .int(2); m.states["d32"]?.values["2.3"] = .int(0); render(root, f("mfcp-idle"))
             m.states["d32"]?.values["2.1"] = .int(1); m.states["d32"]?.values["2.3"] = .int(18)
+            m.page = .detail("d33"); render(root, f("wall-switch"))
+            m.states["d33"]?.values["2.1"] = .bool(false); render(root, f("wall-switch-idle"))
+            m.states["d33"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))
             m.page = .detail("d27"); render(root, f("printer"))

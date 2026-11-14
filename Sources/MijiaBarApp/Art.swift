@@ -253,6 +253,43 @@ struct BulbGlass: Shape {
     }
 }
 
+struct HoodArt: View {
+    let on: Bool, tint: Color
+    var body: some View {
+        ZStack {
+            Ambient(tint, on ? 0.4 : 0, width: 190, height: 120)
+            RoundedRectangle(cornerRadius: 3).appliance(tint, on ? 0.2 : 0)
+                .frame(width: 54, height: 64).offset(y: -30)
+            Path { path in
+                path.move(to: CGPoint(x: 93, y: 48))
+                path.addLine(to: CGPoint(x: 147, y: 48))
+                path.addLine(to: CGPoint(x: 204, y: 87))
+                path.addLine(to: CGPoint(x: 36, y: 87))
+                path.closeSubpath()
+            }
+            .fill(LinearGradient(colors: [Color(white: 0.94), Color(white: 0.64)], startPoint: .top, endPoint: .bottom))
+            RoundedRectangle(cornerRadius: 4).appliance(tint, on ? 0.3 : 0)
+                .frame(width: 172, height: 15).offset(y: 20)
+            Capsule().fill(on ? tint : Color(white: 0.5)).frame(width: 18, height: 3).offset(y: 19)
+            RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.38))
+                .frame(width: 144, height: 14).offset(y: 34)
+            HStack(spacing: 3) {
+                ForEach(0..<14) { _ in
+                    Capsule().fill(Color(white: 0.65)).frame(width: 3, height: 7)
+                }
+            }.offset(y: 34)
+            ForEach([-62.0, 62.0], id: \.self) { position in
+                EllipticalGradient(colors: [tint.opacity(on ? 0.4 : 0), tint.opacity(0)])
+                    .frame(width: 44, height: 36).offset(x: position, y: 52)
+                Capsule().fill(on ? Color.yellow.opacity(0.95) : Color(white: 0.55))
+                    .frame(width: 14, height: 5).offset(x: position, y: 34)
+            }
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 struct WallSwitchArt: View {
     let on: Bool, tint: Color
     var body: some View {

@@ -261,6 +261,7 @@ func zhCategory(_ c: DeviceCategory) -> String {
     case .camera: return L("摄像机", "Camera")
     case .speaker: return L("音箱", "Speaker")
     case .kitchen: return L("厨房电器", "Kitchen")
+    case .hood: return L("油烟机", "Range hood")
     case .printer: return L("打印机", "Printer")
     case .purifier: return L("净水器", "Water purifier")
     case .other: return L("设备", "Device")

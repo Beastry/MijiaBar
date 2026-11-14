@@ -10,6 +10,7 @@ struct TypeDetailView: View {
         let dc = DC(device: device, state: state)
         switch device.category {
         case .fan: FanDetail(dc: dc)
+        case .hood: HoodDetail(dc: dc)
         case .humidifier: HumidifierDetail(dc: dc)
         case .vacuum: VacuumDetail(dc: dc)
         case .fridge: FridgeDetail(dc: dc)
@@ -84,6 +85,7 @@ struct DeviceStatusCard: View {
 /// 设备关着时的插画（没有读数时用）
 @MainActor @ViewBuilder func offArt(_ d: Device, tint: Color) -> some View {
     switch d.category {
+    case .hood: HoodArt(on: false, tint: tint)
     case .ac: ACIllustration(on: false, tint: tint)
     case .fan: FanArt(on: false, level: 0.5, swing: false, tint: tint)
     case .light: BulbArt(on: false, brightness: 0.7, kelvin: nil)
@@ -216,6 +218,25 @@ struct PlugDetail: View {
                            presets: [(L("断电", "Off"), 0), (L("通电", "On"), 1), (L("记忆", "Last"), 2)])
             }
             PowerHistoryCard(device: d, tint: tint)
+        }
+    }
+}
+
+struct HoodDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var on: Bool { dc.bool(dc.spec?.mainOnProperty) ?? false }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on, title: on ? L("已打开", "On") : L("已关闭", "Off"),
+                  subtitle: L("油烟机", "Range hood"), powerOn: on,
+                  onPower: dc.spec?.mainOnProperty.map { prop in { m.write(device, prop.key, .bool(!on)) } }) {
+            HoodArt(on: on, tint: tint)
+        } content: {
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("fan-level"), title: L("风速", "Fan"), icon: "wind", tint: tint)
+                PropTile(dc: dc, prop: dc.p("on", in: "light"), title: L("照明", "Light"), icon: "lightbulb", tint: tint)
+            }
         }
     }
 }

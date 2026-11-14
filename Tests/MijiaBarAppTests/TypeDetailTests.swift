@@ -8,15 +8,71 @@ import MijiaCore
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
-                                (.heater, "heater"), (.dehumidifier, "dehumidifier"),
+                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"),
                                 (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 31)
+        #expect(ArtGallery.rows.count == 32)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func hoodDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d34" })
+        #expect(device.category == .hood && device.category.rawValue == "hood")
+        #expect(device.model == "yunmi.hood.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("厨房", "Kitchen"))
+        #expect(device.name == L("油烟机", "Range hood") && device.icon == "fan.ceiling")
+        #expect(zhCategory(device.category) == L("油烟机", "Range hood"))
+        #expect(HouseCatalog.deviceClass(category: .hood) == .badge)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let power = try #require(context.spec?.mainOnProperty)
+        let level = try #require(context.p("fan-level"))
+        let light = try #require(context.p("on", in: "light"))
+        #expect(power.key == "2.1" && power.writable && power.format == "bool")
+        #expect(context.bool(power) == true && model.powerInfo(device)?.key == power.key)
+        #expect(level.writable && level.format == "uint8" && level.options?.count == 3)
+        #expect(context.num(level) == 2 && context.bool(light) == true)
+        #expect(light.writable && light.format == "bool" && light.key != power.key)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> HoodArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        func tiles(_ value: Any) -> [PropTile] {
+            if let tile = value as? PropTile { return [tile] }
+            if let content = value as? () -> HStack<TupleView<(PropTile, PropTile)>> { return tiles(content()) }
+            return Mirror(reflecting: value).children.flatMap { tiles($0.value) }
+        }
+        #expect(tiles(HoodDetail(dc: context).body).compactMap(\.prop) == [level, light])
+        for on in [true, false] {
+            state.values[power.key] = .bool(on)
+            let detail = HoodDetail(dc: DC(device: device, state: state))
+            #expect(detail.on == on)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: HoodDetail.self))
+            #expect(!contains(routed, type: DeviceCardView.self))
+            #expect(contains(detail.body, type: HoodArt.self))
+            #expect(!contains(detail.body, type: GenericArt.self))
+            #expect(!contains(detail.body, type: CookerArt.self))
+            #expect(!contains(detail.body, type: FanArt.self))
+        }
+        state.spec = DeviceSpec(type: "", description: "", services: [
+            SpecService(iid: 2, type: "urn:miot-spec-v2:service:hood:0", description: "", properties: [power], actions: [])])
+        let absent = tiles(HoodDetail(dc: DC(device: device, state: state)).body)
+        #expect(absent.count == 2 && absent.allSatisfy { $0.prop == nil })
+        let idle = offArt(device, tint: device.category.color)
+        #expect(contains(idle, type: HoodArt.self) && !contains(idle, type: GenericArt.self))
+        #expect(ArtGallery.rows.filter { $0.0 == "hood" }.count == 1)
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "hood" })
+        #expect(contains(gallery.1, type: HoodArt.self) && contains(gallery.2, type: HoodArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-hood-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-hood-" + suffix, "png") != nil)
+        }
     }
 
     @Test func wallSwitchDemoRoutingAndProps() throws {

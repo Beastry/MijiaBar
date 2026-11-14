@@ -4,7 +4,7 @@
 <p align="center">
   <a href="https://github.com/neardws/MijiaBar/releases/latest"><img src="https://img.shields.io/github/v/release/neardws/MijiaBar?label=release&color=blue" alt="Release"></a>
   <a href="https://github.com/neardws/MijiaBar/releases"><img src="https://img.shields.io/github/downloads/neardws/MijiaBar/total?color=brightgreen" alt="Downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/neardws/MijiaBar" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0--only-blue" alt="GPL-3.0-only"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white" alt="Swift 5.9+">
   <img src="https://img.shields.io/badge/Apple-notarized-success?logo=apple" alt="Notarized">
@@ -18,7 +18,7 @@
 
 <p align="center"><img src="https://files.neardws.com/mijiabar/readme/demo.gif" width="300" alt="demo"></p>
 
-[Features](#features) · [Screenshots](#screenshots) · [Install](#install) · [Sign in](#sign-in) · [Auto-hidden devices](#auto-hidden-devices) · [Live video (cameras)](#live-video-cameras) · [Agent / MCP](#agent--mcp) · [Build from source](#build-from-source) · [Where data is stored](#where-data-is-stored) · [Credits](#credits)
+[Features](#features) · [Screenshots](#screenshots) · [Install](#install) · [Sign in](#sign-in) · [Auto-hidden devices](#auto-hidden-devices) · [Live video (cameras)](#live-video-cameras) · [Agent / MCP](#agent--mcp) · [Build from source](#build-from-source) · [Where data is stored](#where-data-is-stored) · [Credits](#credits) · [License](#license)
 
 ## Features
 
@@ -149,4 +149,16 @@ Project layout: `Sources/MijiaCore` (cloud API, QR login, miIO, MIoT spec), `Sou
 
 Motion design contributed by [@skyswordw](https://github.com/skyswordw) ([#1](https://github.com/neardws/MijiaBar/pull/1)). Protocol details from [python-miio](https://github.com/rytilahti/python-miio), [Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) and [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home). UI inspired by [@the_mcnaveen](https://x.com/the_mcnaveen)'s AC menu bar app.
 
-MIT License.
+## License
+
+First-party MijiaBar source, scripts, tests, and documentation in this repository are licensed under the GNU General Public License, version 3 only ([GPL-3.0-only](LICENSE)). The grant names version 3 and stops there. `LICENSE` is the unmodified GNU GPL version 3. The same scope is written out in [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt).
+
+Copyright (c) 2026 neardws. Contributors keep the copyright in their own contributions. This repository does not assign those copyrights. Third-party material keeps its own license.
+
+From this change forward, first-party material is offered under GPL-3.0-only. Copies already received under the MIT License keep the MIT rights granted with those copies, including copies from earlier commits, tags, and releases. Those earlier permissions remain in force. The original MIT copyright line and permission notice are preserved unmodified in [LICENSES/MIT-legacy.txt](LICENSES/MIT-legacy.txt).
+
+The appendix in `LICENSE`, “How to Apply These Terms to Your New Programs,” contains a sample notice with the words “or any later version.” That sample is part of the unmodified GPL text. It is not the grant for this repository. The first-party grant is version 3 only.
+
+Third-party components keep their own licenses. Bundled [go2rtc](https://github.com/AlexxIT/go2rtc) remains MIT: it is an official release, SHA-256 checked at build time, and it is not committed in this repository. [Sparkle](https://sparkle-project.org/) remains MIT and is downloaded at build time. Motion design by [@skyswordw](https://github.com/skyswordw) stays credited above.
+
+MijiaBar is an unofficial project and is not affiliated with Xiaomi.

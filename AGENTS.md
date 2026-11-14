@@ -15,6 +15,7 @@ MijiaBar is a macOS menu bar app (SwiftUI, macOS 14+) that controls Xiaomi Mi Ho
   - `LiveVideo.swift` is the camera/doorbell live view (inline player, pop-out window, go2rtc process).
 - `Sources/mijiabar` — the CLI and MCP server. Writes are gated by `AgentPolicy` (Settings → Agent interface).
 - `site/template.html` + `i18n/site/*.json` — the website (GitHub Pages serves `docs/`). `scripts/gen-site.py` renders `docs/index.html` (English) and `docs/zh-CN.html` (Simplified Chinese). Only these two are published for now; the Traditional Chinese draft sits in `i18n/site/drafts/zh-Hant.json` and is not built — don't update it until it's switched back on in `LANGS`.
+- License: first-party source, scripts, tests, and documentation are GPL-3.0-only. `LICENSE` is the unmodified GNU GPL version 3. Scope and the surviving MIT grant are stated in `LICENSES/GPL-3.0-only.txt`. The pre-migration MIT copyright and permission notice is preserved unmodified in `LICENSES/MIT-legacy.txt`. go2rtc and Sparkle stay MIT; do not relicense third-party material.
 
 ## Sparkle updates
 

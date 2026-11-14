@@ -149,7 +149,7 @@
   "q2": "Is MijiaBar made by Xiaomi?",
   "a2": "No. It's an independent open-source project. It uses the same cloud API as the Mi Home app, plus the miIO protocol on your local network.",
   "q3": "Is it safe to install?",
-  "a3": "Every release is signed with a Developer ID and notarized by Apple. The source code is public on GitHub under the MIT license.",
+  "a3": "Every release is signed with a Developer ID and notarized by Apple. First-party source in this repository is GPL-3.0-only. Copies already received under the MIT License keep those MIT rights. Third-party components, including go2rtc, keep their own licenses.",
   "q4": "Where does my account information go?",
   "a4": "You sign in by scanning a QR code, so there's no password to type. Your session is stored in the macOS Keychain and is only sent to Xiaomi.",
   "q5": "Does it work outside mainland China?",
@@ -169,6 +169,6 @@
   "foot_releases": "Releases",
   "foot_guide": "Agent setup guide",
   "foot_issue": "Report an issue",
-  "foot_license": "MIT License",
+  "foot_license": "GPL-3.0-only",
   "foot_copyright": "Copyright © 2026 neardws and contributors."
 }

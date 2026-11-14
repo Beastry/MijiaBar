@@ -131,7 +131,7 @@
   "q2": "MijiaBar 是小米官方出品的嗎？",
   "a2": "不是。這是一個獨立的開源專案，使用與米家 App 相同的雲端介面，以及區域網路內的 miIO 協定。",
   "q3": "安裝安全嗎？",
-  "a3": "每個正式版本都使用 Developer ID 簽署並經過 Apple 公證，原始碼以 MIT 授權條款公開在 GitHub 上。",
+  "a3": "每個正式版本都使用 Developer ID 簽署並經過 Apple 公證。本儲存庫第一方原始碼以 GPL-3.0-only 發布。此前已依 MIT 授權條款取得的副本仍保留這些 MIT 權利。包括 go2rtc 在內的第三方元件仍使用各自的授權條款。",
   "q4": "我的帳號資訊會傳到哪裡？",
   "a4": "登入透過掃碼完成，免輸入密碼。登入資訊儲存在 macOS 鑰匙圈中，只會傳送給小米的伺服器。",
   "q5": "在中國大陸以外能用嗎？",
@@ -151,6 +151,6 @@
   "foot_releases": "所有版本",
   "foot_guide": "Agent 安裝指南",
   "foot_issue": "回報問題",
-  "foot_license": "MIT 授權條款",
+  "foot_license": "GPL-3.0-only",
   "foot_copyright": "Copyright © 2026 neardws 及貢獻者。"
 }

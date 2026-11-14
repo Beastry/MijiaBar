@@ -4,7 +4,7 @@
 <p align="center">
   <a href="https://github.com/neardws/MijiaBar/releases/latest"><img src="https://img.shields.io/github/v/release/neardws/MijiaBar?label=release&color=blue" alt="Release"></a>
   <a href="https://github.com/neardws/MijiaBar/releases"><img src="https://img.shields.io/github/downloads/neardws/MijiaBar/total?color=brightgreen" alt="Downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/neardws/MijiaBar" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0--only-blue" alt="GPL-3.0-only"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white" alt="Swift 5.9+">
   <img src="https://img.shields.io/badge/Apple-notarized-success?logo=apple" alt="Notarized">
@@ -18,7 +18,7 @@
 
 <p align="center"><img src="https://files.neardws.com/mijiabar/readme/demo.gif" width="300" alt="demo"></p>
 
-[功能](#功能) · [截图](#截图) · [安装](#安装) · [登录](#登录) · [默认隐藏规则](#默认隐藏规则) · [摄像头直播](#摄像头直播) · [Agent / MCP](#agent--mcp) · [从源码构建](#从源码构建) · [数据存放](#数据存放) · [致谢](#致谢)
+[功能](#功能) · [截图](#截图) · [安装](#安装) · [登录](#登录) · [默认隐藏规则](#默认隐藏规则) · [摄像头直播](#摄像头直播) · [Agent / MCP](#agent--mcp) · [从源码构建](#从源码构建) · [数据存放](#数据存放) · [致谢](#致谢) · [许可证](#许可证)
 
 ## 功能
 
@@ -149,4 +149,16 @@ scripts/package.sh   # dist/MijiaBar.app + DMG (signs & notarizes when a Develop
 
 动效设计由 [@skyswordw](https://github.com/skyswordw) 贡献（[#1](https://github.com/neardws/MijiaBar/pull/1)）。协议细节参考 [python-miio](https://github.com/rytilahti/python-miio)、[Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) 和 [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home)。界面灵感来自 [@the_mcnaveen](https://x.com/the_mcnaveen) 的空调菜单栏应用。
 
-MIT 许可证。
+## 许可证
+
+本仓库中的第一方源代码、脚本、测试和文档，以 GNU 通用公共许可证第 3 版且仅此版本授权（[GPL-3.0-only](LICENSE)）。授权写明第 3 版，到此为止。`LICENSE` 是未经修改的 GNU GPL 第 3 版全文。同一范围说明见 [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt)。
+
+Copyright (c) 2026 neardws。贡献者保留其各自贡献的著作权。本仓库不转移这些著作权。第三方材料仍使用其自身的许可证。
+
+自本次变更起，第一方材料以 GPL-3.0-only 提供。此前已经按 MIT 许可证获得的副本，仍保留随该副本授予的 MIT 权利，包括更早的提交、标签和发布版本中的副本。这些既有许可继续有效。原来的 MIT 著作权声明和许可声明按原文保存在 [LICENSES/MIT-legacy.txt](LICENSES/MIT-legacy.txt)。
+
+`LICENSE` 中的附录 “How to Apply These Terms to Your New Programs” 含有一份示例声明，其中写有 “or any later version”。该示例属于未经修改的 GPL 正文，不是本仓库的授权。第一方授权仅为第 3 版。
+
+第三方组件仍使用各自的许可证。内置的 [go2rtc](https://github.com/AlexxIT/go2rtc) 仍为 MIT：它是官方发布包，构建时校验 SHA-256，且不进入本仓库。[Sparkle](https://sparkle-project.org/) 仍为 MIT，在构建时下载。动效设计仍致谢 [@skyswordw](https://github.com/skyswordw)，见上一节。
+
+本项目非小米官方项目，与小米无关。

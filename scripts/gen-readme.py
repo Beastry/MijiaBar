@@ -9,7 +9,7 @@ R='neardws/MijiaBar'
 badges=f'''<p align="center">
   <a href="https://github.com/{R}/releases/latest"><img src="https://img.shields.io/github/v/release/{R}?label=release&color=blue" alt="Release"></a>
   <a href="https://github.com/{R}/releases"><img src="https://img.shields.io/github/downloads/{R}/total?color=brightgreen" alt="Downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/{R}" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0--only-blue" alt="GPL-3.0-only"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white" alt="Swift 5.9+">
   <img src="https://img.shields.io/badge/Apple-notarized-success?logo=apple" alt="Notarized">
@@ -43,7 +43,18 @@ confirm="With **Confirm every write** on, every change an agent makes shows a ma
 cli_h="CLI", tools="MCP tools: `list_devices`, `get_device_state`, `set_property`, `run_action`.",
 build_note="Project layout: `Sources/MijiaCore` (cloud API, QR login, miIO, MIoT spec), `Sources/MijiaBarApp` (SwiftUI app), `Sources/mijiabar` (CLI + MCP). Translations live in `i18n/*.tsv`; run `scripts/gen-i18n.py` after editing.",
 credits="Motion design contributed by [@skyswordw](https://github.com/skyswordw) ([#1](https://github.com/neardws/MijiaBar/pull/1)). Protocol details from [python-miio](https://github.com/rytilahti/python-miio), [Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) and [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home). UI inspired by [@the_mcnaveen](https://x.com/the_mcnaveen)'s AC menu bar app.",
-lic="MIT License.")
+lic_h="License",
+lic="""First-party MijiaBar source, scripts, tests, and documentation in this repository are licensed under the GNU General Public License, version 3 only ([GPL-3.0-only](LICENSE)). The grant names version 3 and stops there. `LICENSE` is the unmodified GNU GPL version 3. The same scope is written out in [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt).
+
+Copyright (c) 2026 neardws. Contributors keep the copyright in their own contributions. This repository does not assign those copyrights. Third-party material keeps its own license.
+
+From this change forward, first-party material is offered under GPL-3.0-only. Copies already received under the MIT License keep the MIT rights granted with those copies, including copies from earlier commits, tags, and releases. Those earlier permissions remain in force. The original MIT copyright line and permission notice are preserved unmodified in [LICENSES/MIT-legacy.txt](LICENSES/MIT-legacy.txt).
+
+The appendix in `LICENSE`, “How to Apply These Terms to Your New Programs,” contains a sample notice with the words “or any later version.” That sample is part of the unmodified GPL text. It is not the grant for this repository. The first-party grant is version 3 only.
+
+Third-party components keep their own licenses. Bundled [go2rtc](https://github.com/AlexxIT/go2rtc) remains MIT: it is an official release, SHA-256 checked at build time, and it is not committed in this repository. [Sparkle](https://sparkle-project.org/) remains MIT and is downloaded at build time. Motion design by [@skyswordw](https://github.com/skyswordw) stays credited above.
+
+MijiaBar is an unofficial project and is not affiliated with Xiaomi.""")
 T['zh-Hans']=dict(tag="在 macOS 菜单栏控制米家设备，也可以交给 AI Agent 来控制。",
 note="非小米官方项目。使用与米家 App 相同的云端接口和局域网 miIO 协议。",
 toc=["功能","截图","安装","登录","Agent / MCP","从源码构建","致谢"],dark="深色模式",
@@ -68,7 +79,18 @@ confirm="开启 **每次写操作弹窗确认** 后，Agent 的每次控制都�
 cli_h="命令行", tools="MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`。",
 build_note="项目结构：`Sources/MijiaCore`（云端 API、扫码登录、miIO、MIoT 规格）、`Sources/MijiaBarApp`（SwiftUI 应用）、`Sources/mijiabar`（CLI + MCP）。翻译在 `i18n/*.tsv`，修改后运行 `scripts/gen-i18n.py`。",
 credits="动效设计由 [@skyswordw](https://github.com/skyswordw) 贡献（[#1](https://github.com/neardws/MijiaBar/pull/1)）。协议细节参考 [python-miio](https://github.com/rytilahti/python-miio)、[Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) 和 [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home)。界面灵感来自 [@the_mcnaveen](https://x.com/the_mcnaveen) 的空调菜单栏应用。",
-lic="MIT 许可证。")
+lic_h="许可证",
+lic="""本仓库中的第一方源代码、脚本、测试和文档，以 GNU 通用公共许可证第 3 版且仅此版本授权（[GPL-3.0-only](LICENSE)）。授权写明第 3 版，到此为止。`LICENSE` 是未经修改的 GNU GPL 第 3 版全文。同一范围说明见 [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt)。
+
+Copyright (c) 2026 neardws。贡献者保留其各自贡献的著作权。本仓库不转移这些著作权。第三方材料仍使用其自身的许可证。
+
+自本次变更起，第一方材料以 GPL-3.0-only 提供。此前已经按 MIT 许可证获得的副本，仍保留随该副本授予的 MIT 权利，包括更早的提交、标签和发布版本中的副本。这些既有许可继续有效。原来的 MIT 著作权声明和许可声明按原文保存在 [LICENSES/MIT-legacy.txt](LICENSES/MIT-legacy.txt)。
+
+`LICENSE` 中的附录 “How to Apply These Terms to Your New Programs” 含有一份示例声明，其中写有 “or any later version”。该示例属于未经修改的 GPL 正文，不是本仓库的授权。第一方授权仅为第 3 版。
+
+第三方组件仍使用各自的许可证。内置的 [go2rtc](https://github.com/AlexxIT/go2rtc) 仍为 MIT：它是官方发布包，构建时校验 SHA-256，且不进入本仓库。[Sparkle](https://sparkle-project.org/) 仍为 MIT，在构建时下载。动效设计仍致谢 [@skyswordw](https://github.com/skyswordw)，见上一节。
+
+本项目非小米官方项目，与小米无关。""")
 T['zh-Hant']=dict(tag="在 macOS 選單列控制米家裝置，也可以交給 AI Agent 來控制。",
 note="非小米官方專案。使用與米家 App 相同的雲端介面和區域網路 miIO 協定。",
 toc=["功能","截圖","安裝","登入","Agent / MCP","從原始碼建置","致謝"],dark="深色模式",
@@ -93,7 +115,18 @@ confirm="開啟 **每次寫入操作跳出視窗確認** 後，Agent 的每次�
 cli_h="命令列", tools="MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`。",
 build_note="專案結構：`Sources/MijiaCore`（雲端 API、掃碼登入、miIO、MIoT 規格）、`Sources/MijiaBarApp`（SwiftUI 應用程式）、`Sources/mijiabar`（CLI + MCP）。翻譯在 `i18n/*.tsv`，修改後執行 `scripts/gen-i18n.py`。",
 credits="動態效果設計由 [@skyswordw](https://github.com/skyswordw) 貢獻（[#1](https://github.com/neardws/MijiaBar/pull/1)）。協定細節參考 [python-miio](https://github.com/rytilahti/python-miio)、[Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) 和 [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home)。介面靈感來自 [@the_mcnaveen](https://x.com/the_mcnaveen) 的冷氣選單列 App。",
-lic="MIT 授權。")
+lic_h="授權條款",
+lic="""本儲存庫中的第一方原始碼、指令碼、測試和文件，以 GNU 通用公眾授權條款第 3 版且僅此版本授權（[GPL-3.0-only](LICENSE)）。授權寫明第 3 版，到此為止。`LICENSE` 是未經修改的 GNU GPL 第 3 版全文。同一範圍說明見 [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt)。
+
+Copyright (c) 2026 neardws。貢獻者保留其各自貢獻的著作權。本儲存庫不移轉這些著作權。第三方材料仍使用其自身的授權條款。
+
+自本次變更起，第一方材料以 GPL-3.0-only 提供。此前已依 MIT 授權取得的副本，仍保留隨該副本授予的 MIT 權利，包括較早的提交、標籤和發行版本中的副本。這些既有許可繼續有效。原來的 MIT 著作權聲明和許可聲明按原文保存在 [LICENSES/MIT-legacy.txt](LICENSES/MIT-legacy.txt)。
+
+`LICENSE` 中的附錄 “How to Apply These Terms to Your New Programs” 含有一份範例聲明，其中寫有 “or any later version”。該範例屬於未經修改的 GPL 正文，不是本儲存庫的授權。第一方授權僅限第 3 版。
+
+第三方元件仍使用各自的授權條款。內建的 [go2rtc](https://github.com/AlexxIT/go2rtc) 仍為 MIT：它是官方發佈套件，建置時驗證 SHA-256，且不進入本儲存庫。[Sparkle](https://sparkle-project.org/) 仍為 MIT，於建置時下載。動態效果設計仍致謝 [@skyswordw](https://github.com/skyswordw)，見上一節。
+
+本專案非小米官方專案，與小米無關。""")
 import re
 S="~/Library/Application Support/MijiaBar/"
 X={
@@ -132,7 +165,7 @@ for lang,fn in files.items():
     sw=' · '.join(f'<b>{names[l]}</b>' if l==lang else f'<a href="{f}">{names[l]}</a>' for l,f in files.items())
     hh,hl,dh,dl=X[lang]
     lvh,lvl=LV[lang]
-    toc=t['toc'][:4]+[hh,lvh]+t['toc'][4:6]+[dh]+t['toc'][6:]
+    toc=t['toc'][:4]+[hh,lvh]+t['toc'][4:6]+[dh]+t['toc'][6:]+[t['lic_h']]
     if '--reuse-prompts' in sys.argv:
         prompt=re.search(r'```text\n(.*?)\n```',open(fn).read(),re.S).group(1)
     else:
@@ -156,6 +189,7 @@ for lang,fn in files.items():
        f'### {t["cli_h"]}','',cli,'',t['tools'],'',
        f'## {toc[7]}','',build,'',t['build_note'],'',
        f'## {dh}','']+[f'- {x}' for x in dl]+['',
-       f'## {toc[9]}','',t['credits'],'',t['lic'],'']
+       f'## {toc[9]}','',t['credits'],'',
+       f'## {toc[10]}','',t['lic'],'']
     open(fn,'w').write('\n'.join(x for x in o if x is not None).lstrip('\n'))
 print('ok')

@@ -1,0 +1,84 @@
+MijiaBar first-party license scope
+SPDX-License-Identifier: GPL-3.0-only
+
+This file states which license is offered for first-party material in this
+repository. It does not modify the GNU General Public License. The license
+text in the repository root file LICENSE is the GNU GPL version 3, unmodified,
+as published by the Free Software Foundation at:
+
+https://www.gnu.org/licenses/gpl-3.0.txt
+
+Copyright (c) 2026 neardws
+
+Contributors retain copyright in their own contributions. This notice does
+not assign that copyright to anyone, and it does not add a copyright owner
+who is not already named in this repository.
+
+1. First-party grant
+
+Source, scripts, tests, and documentation written for MijiaBar and committed
+in this repository are offered under the GNU General Public License, version
+3 only. The SPDX identifier is GPL-3.0-only.
+
+"Version 3 only" means the grant names GPL version 3 and stops there. It does
+not include the option to follow a later version of the GPL.
+
+From this change forward, that first-party material is offered under
+GPL-3.0-only when distributed from this repository.
+
+2. The GPL appendix sample is not this grant
+
+LICENSE is the full unmodified GPL version 3, including the appendix "How to
+Apply These Terms to Your New Programs." That appendix contains a sample
+copyright notice with the words "or (at your option) any later version."
+The sample is part of the unmodified license text. It is not the grant for
+this repository. The grant for first-party material is the statement in this
+file: GPL version 3 only.
+
+3. MIT rights already granted still apply to those copies
+
+Before this change, this repository offered its materials under the MIT
+License. The original MIT license is preserved byte for byte in
+LICENSES/MIT-legacy.txt. That file is the historical notice. It is not a
+second grant for distributions made from this repository after this change.
+
+The preserved file contains, unmodified:
+
+- the copyright line "Copyright (c) 2026 neardws";
+- the MIT permission notice, beginning "Permission is hereby granted, free of
+  charge, to any person obtaining a copy of this software and associated
+  documentation files (the "Software")";
+- the condition that the copyright notice and the permission notice stay with
+  copies and substantial portions;
+- the "AS IS" warranty disclaimer.
+
+Copies already received under that MIT License keep the MIT rights granted
+with those copies. That includes copies taken from earlier commits, tags, and
+releases. History has not been rewritten. This change does not revoke those
+earlier permissions. LICENSES/MIT-legacy.txt keeps the original copyright and
+permission notice available with the tree.
+
+4. Third-party material is outside this grant
+
+This notice does not relicense third-party material. A file that carries its
+own upstream license notice keeps that notice. No committed file in this
+repository is identified here as a third-party work under a different license.
+
+These components are not committed in this repository. They keep the licenses
+already recorded for them:
+
+- go2rtc (https://github.com/AlexxIT/go2rtc) is MIT. scripts/package.sh
+  downloads an official release, checks its SHA-256, and copies that
+  project's LICENSE into the app bundle as go2rtc-LICENSE.txt.
+- Sparkle (https://sparkle-project.org/) is MIT. scripts/fetch-sparkle.sh
+  downloads it at build time. docs/UPDATING.md records that Sparkle 2.10
+  is MIT.
+
+5. Credits and disclaimer left unchanged
+
+Motion design credit to skyswordw (https://github.com/skyswordw, pull
+request 1 on neardws/MijiaBar) is unchanged. This notice does not transfer
+that contributor's copyright.
+
+MijiaBar is an unofficial project. It is not affiliated with or endorsed by
+Xiaomi. Xiaomi and Mi Home are trademarks of their respective owners.

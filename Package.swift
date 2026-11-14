@@ -1,4 +1,6 @@
 // swift-tools-version:5.9
+// 第一方代码：GPL-3.0-only。见 LICENSE（未经修改的 GNU GPL 第 3 版）与 LICENSES/GPL-3.0-only.txt。
+// Sparkle 是构建时下载的第三方二进制，仍为 MIT，不在本次授权范围内。
 import PackageDescription
 
 // 按 Swift 6 的并发规则检查（数据竞争以警告形式出现），为切换到 Swift 6 语言模式做准备

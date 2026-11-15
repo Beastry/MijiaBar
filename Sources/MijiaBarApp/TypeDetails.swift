@@ -11,6 +11,7 @@ struct TypeDetailView: View {
         switch device.category {
         case .fan: FanDetail(dc: dc)
         case .hood: HoodDetail(dc: dc)
+        case .lock: LockDetail(dc: dc)
         case .humidifier: HumidifierDetail(dc: dc)
         case .vacuum: VacuumDetail(dc: dc)
         case .fridge: FridgeDetail(dc: dc)
@@ -86,6 +87,7 @@ struct DeviceStatusCard: View {
 @MainActor @ViewBuilder func offArt(_ d: Device, tint: Color) -> some View {
     switch d.category {
     case .hood: HoodArt(on: false, tint: tint)
+    case .lock: LockArt(locked: false, tint: tint)
     case .ac: ACIllustration(on: false, tint: tint)
     case .fan: FanArt(on: false, level: 0.5, swing: false, tint: tint)
     case .light: BulbArt(on: false, brightness: 0.7, kelvin: nil)
@@ -236,6 +238,28 @@ struct HoodDetail: View {
             HStack(spacing: 8) {
                 PropTile(dc: dc, prop: dc.p("fan-level"), title: L("风速", "Fan"), icon: "wind", tint: tint)
                 PropTile(dc: dc, prop: dc.p("on", in: "light"), title: L("照明", "Light"), icon: "lightbulb", tint: tint)
+            }
+        }
+    }
+}
+
+struct LockDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var lockProperty: SpecProperty? { [dc.p("locked"), dc.p("lock")].compactMap { $0 }.first { $0.format == "bool" } }
+    var locked: Bool { dc.bool(lockProperty) ?? false }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        let power = dc.spec?.mainOnProperty
+        TypeShell(device: device, tint: tint, isOn: locked, title: locked ? L("已上锁", "Locked") : L("已解锁", "Unlocked"),
+                  subtitle: L("门锁", "Door lock"), powerOn: dc.bool(power),
+                  onPower: power.map { prop in { m.write(device, prop.key, .bool(!(dc.bool(prop) ?? false))) } }) {
+            LockArt(locked: locked, tint: tint)
+        } content: {
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: dc.p("door-state"), title: L("门状态", "Door state"), icon: "door.left.hand.closed", tint: tint)
+                PropTile(dc: dc, prop: dc.p("battery-level"), title: L("电量", "Battery"), icon: "battery.75percent", tint: tint)
+                PropTile(dc: dc, prop: lockProperty, title: L("门锁", "Door lock"), icon: "lock.fill", tint: tint)
             }
         }
     }

@@ -290,6 +290,39 @@ struct HoodArt: View {
     }
 }
 
+struct LockArt: View {
+    let locked: Bool, tint: Color
+    var body: some View {
+        ZStack {
+            Ambient(tint, locked ? 0.4 : 0, width: 170, height: 128)
+            RoundedRectangle(cornerRadius: 5).fill(tint.opacity(0.12))
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Theme.stroke, lineWidth: 1))
+                .frame(width: 110, height: 128).offset(x: -8)
+            Rectangle().fill(tint.opacity(0.2)).frame(width: 3, height: 128).offset(x: 45)
+            RoundedRectangle(cornerRadius: 3).fill(aluminum)
+                .frame(width: locked ? 32 : 10, height: 14).offset(x: locked ? 40 : 29, y: -2)
+            RoundedRectangle(cornerRadius: 10).appliance(tint, locked ? 0.3 : 0)
+                .frame(width: 48, height: 118)
+            RoundedRectangle(cornerRadius: 6).fill(darkGlass).frame(width: 34, height: 53).offset(y: -22)
+            VStack(spacing: 6) {
+                ForEach(0..<4) { _ in
+                    HStack(spacing: 6) {
+                        ForEach(0..<3) { _ in
+                            RoundedRectangle(cornerRadius: 1).fill(Color.white.opacity(0.65)).frame(width: 3, height: 3)
+                        }
+                    }
+                }
+            }.offset(y: -24)
+            Capsule().fill(locked ? tint : Color.orange).frame(width: 16, height: 3).offset(y: 9)
+            RoundedRectangle(cornerRadius: 4).fill(aluminum)
+                .frame(width: 62, height: 10).rotationEffect(.degrees(locked ? 0 : 24), anchor: .leading).offset(x: 23, y: 24)
+            RoundedRectangle(cornerRadius: 2).fill(Color.primary.opacity(0.25)).frame(width: 3, height: 11).offset(y: 44)
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 struct WallSwitchArt: View {
     let on: Bool, tint: Color
     var body: some View {

@@ -180,6 +180,8 @@ func acSpec() throws -> DeviceSpec {
             ("mijia.dehumidifier.demo", .dehumidifier), ("nwt.derh.jsq", .dehumidifier),
             ("mijia.dehumidifier.jsq", .dehumidifier),
             ("yunmi.hood.w1", .hood), ("viomi.hood.v1", .hood), ("YUNMI.HOOD.DEMO", .hood),
+            ("lumi.lock.acn02", .lock), ("loock.lock.t1", .lock), ("LUMI.LOCK.DEMO", .lock),
+            ("yeelink.clock.bifrost", .other),
         ]
         for (model, cat) in cases { #expect(DeviceCategory.guess(model) == cat, "\(model)") }
     }

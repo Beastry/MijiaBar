@@ -8,15 +8,89 @@ import MijiaCore
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
-                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"),
+                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"),
                                 (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 32)
+        #expect(ArtGallery.rows.count == 33)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func lockDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d35" })
+        #expect(device.category == .lock && device.category.rawValue == "lock")
+        #expect(device.model == "lumi.lock.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("门口", "Entrance"))
+        #expect(device.name == L("门锁", "Door lock"))
+        #expect(device.icon == DeviceCategory.lock.icon && device.icon == "lock.fill")
+        #expect(device.category.color == Color.brown)
+        #expect(zhCategory(device.category) == L("门锁", "Door lock"))
+        #expect(HouseCatalog.deviceClass(category: .lock) == .badge)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let locked = try #require(context.p("locked"))
+        let door = try #require(context.p("door-state"))
+        let battery = try #require(context.p("battery-level"))
+        #expect(locked.key == "2.1" && locked.writable && locked.format == "bool")
+        #expect(context.bool(locked) == true && context.spec?.mainOnProperty == nil)
+        #expect(door.key == "2.2" && !door.writable && door.options?.count == 2)
+        #expect(context.num(door) == 0)
+        #expect(battery.key == "3.1" && !battery.writable && context.num(battery) == 80)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> LockArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        func tiles(_ value: Any) -> [PropTile] {
+            if let tile = value as? PropTile { return [tile] }
+            return Mirror(reflecting: value).children.flatMap { tiles($0.value) }
+        }
+        for isLocked in [true, false] {
+            state.values[locked.key] = .bool(isLocked)
+            let detail = LockDetail(dc: DC(device: device, state: state))
+            #expect(detail.locked == isLocked)
+            let shell = try #require(detail.body as? TypeShell<LockArt, HStack<TupleView<(PropTile, PropTile, PropTile)>>>)
+            #expect(shell.isOn == isLocked && shell.art().locked == isLocked)
+            #expect(shell.title == (isLocked ? L("已上锁", "Locked") : L("已解锁", "Unlocked")))
+            #expect(shell.subtitle == L("门锁", "Door lock") && shell.onPower == nil)
+            #expect(tiles(shell.content()).compactMap(\.prop) == [door, battery, locked])
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: LockDetail.self))
+            #expect(contains(detail.body, type: LockArt.self))
+            #expect(!contains(routed, type: DeviceCardView.self))
+            #expect(!contains(detail.body, type: GenericArt.self))
+            #expect(!contains(detail.body, type: CameraArt.self))
+            #expect(!contains(detail.body, type: DoorbellArt.self))
+        }
+        let alias = SpecProperty(siid: 2, iid: 1, type: "urn:miot-spec-v2:property:lock:0", description: "", format: "bool",
+                                 access: ["read", "write"], unit: nil, range: nil, options: nil)
+        let power = SpecProperty(siid: 2, iid: 3, type: "urn:miot-spec-v2:property:on:0", description: "", format: "bool",
+                                 access: ["read", "write"], unit: nil, range: nil, options: nil)
+        state.spec = DeviceSpec(type: "", description: "", services: [
+            SpecService(iid: 2, type: "urn:miot-spec-v2:service:lock:0", description: "", properties: [alias, power], actions: [])])
+        state.values[alias.key] = .bool(true)
+        state.values[power.key] = .bool(false)
+        let powered = LockDetail(dc: DC(device: device, state: state))
+        let poweredShell = try #require(powered.body as? TypeShell<LockArt, HStack<TupleView<(PropTile, PropTile, PropTile)>>>)
+        #expect(powered.lockProperty == alias && poweredShell.isOn)
+        #expect(poweredShell.onPower != nil && poweredShell.powerOn == false)
+        state.spec = DeviceSpec(type: "", description: "", services: [])
+        let empty = LockDetail(dc: DC(device: device, state: state))
+        let emptyShell = try #require(empty.body as? TypeShell<LockArt, HStack<TupleView<(PropTile, PropTile, PropTile)>>>)
+        #expect(emptyShell.onPower == nil && !emptyShell.isOn)
+        let emptyTiles = tiles(emptyShell.content())
+        #expect(emptyTiles.count == 3 && emptyTiles.allSatisfy { $0.prop == nil })
+        let idle = offArt(device, tint: device.category.color)
+        #expect(contains(idle, type: LockArt.self) && !contains(idle, type: GenericArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "lock" })
+        #expect(contains(gallery.1, type: LockArt.self) && contains(gallery.2, type: LockArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-lock-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-lock-" + suffix, "png") != nil)
+        }
     }
 
     @Test func hoodDemoRoutingAndProps() throws {

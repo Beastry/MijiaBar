@@ -58,6 +58,7 @@ extension DeviceCategory {
         case .speaker: return "hifispeaker"
         case .kitchen: return "frying.pan"
         case .hood: return "fan.ceiling"
+        case .lock: return "lock.fill"
         case .printer: return "printer"
         case .purifier: return "drop"
         case .other: return "square.grid.2x2"
@@ -82,6 +83,7 @@ extension DeviceCategory {
         case .speaker: return .pink
         case .kitchen: return .orange
         case .hood: return .orange
+        case .lock: return .brown
         case .printer: return .blue
         case .purifier: return .blue
         case .other: return .indigo

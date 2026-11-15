@@ -366,16 +366,6 @@ enum Snapshot {
         let m = AppModel(mock: true)
         let root = RootView().environmentObject(m)
         for (suffix, name) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
-                appearance = NSAppearance(named: name)
-                func f(_ n: String) -> URL { URL(fileURLWithPath: dir).appendingPathComponent("\(n)-\(suffix).png") }
-                m.session = Session(userId: "demo", ssecurity: "", serviceToken: "", region: "cn")
-                m.page = .detail("d35"); render(root, f("lock"))
-                m.states["d35"]?.values["2.1"] = .bool(false); render(root, f("lock-idle"))
-                m.states["d35"]?.values["2.1"] = .bool(true)
-            }
-            exit(0)
-        }
-        for (suffix, name) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
             appearance = NSAppearance(named: name)
             func f(_ n: String) -> URL { out.appendingPathComponent("\(n)-\(suffix).png") }
             m.session = Session(userId: "demo", ssecurity: "", serviceToken: "", region: "cn")

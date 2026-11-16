@@ -12,6 +12,7 @@ struct TypeDetailView: View {
         case .fan: FanDetail(dc: dc)
         case .hood: HoodDetail(dc: dc)
         case .lock: LockDetail(dc: dc)
+        case .airer: AirerDetail(dc: dc)
         case .humidifier: HumidifierDetail(dc: dc)
         case .vacuum: VacuumDetail(dc: dc)
         case .fridge: FridgeDetail(dc: dc)
@@ -88,6 +89,7 @@ struct DeviceStatusCard: View {
     switch d.category {
     case .hood: HoodArt(on: false, tint: tint)
     case .lock: LockArt(locked: false, tint: tint)
+    case .airer: AirerArt(lowered: false, lightOn: false, tint: tint)
     case .ac: ACIllustration(on: false, tint: tint)
     case .fan: FanArt(on: false, level: 0.5, swing: false, tint: tint)
     case .light: BulbArt(on: false, brightness: 0.7, kelvin: nil)
@@ -260,6 +262,32 @@ struct LockDetail: View {
                 PropTile(dc: dc, prop: dc.p("door-state"), title: L("门状态", "Door state"), icon: "door.left.hand.closed", tint: tint)
                 PropTile(dc: dc, prop: dc.p("battery-level"), title: L("电量", "Battery"), icon: "battery.75percent", tint: tint)
                 PropTile(dc: dc, prop: lockProperty, title: L("门锁", "Door lock"), icon: "lock.fill", tint: tint)
+            }
+        }
+    }
+}
+
+struct AirerDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var light: SpecProperty? { dc.p("on", in: "light") ?? dc.p("on") }
+    var power: SpecProperty? { light.flatMap { $0.writable && $0.format == "bool" ? $0 : nil } ?? dc.spec?.mainOnProperty }
+    var position: SpecProperty? { dc.p("current-position") ?? dc.p("target-position") }
+    var lowered: Bool { (dc.num(position) ?? 0) > 0 }
+    var on: Bool { dc.bool(power) ?? lowered }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on,
+                  title: power != nil ? (on ? L("已开启", "On") : L("已关闭", "Off")) : (lowered ? L("已降下", "Lowered") : L("已升起", "Raised")),
+                  subtitle: L("晾衣架", "Clothes airer"), powerOn: dc.bool(power),
+                  onPower: power.map { prop in { m.write(device, prop.key, .bool(!on)) } }) {
+            AirerArt(lowered: lowered, lightOn: dc.bool(light) ?? false, tint: tint)
+        } content: {
+            if let target = primarySliderProp(dc) { PropSlider(dc: dc, prop: target, colors: [.gray, tint], enabled: true) }
+            HStack(spacing: 8) {
+                if let light { PropTile(dc: dc, prop: light, title: L("照明", "Light"), icon: "lightbulb", tint: tint) }
+                if let position { PropTile(dc: dc, prop: position, title: L("当前位置", "Position"), icon: "arrow.up.and.down", tint: tint) }
+                if let drying = dc.p("drying") { PropTile(dc: dc, prop: drying, title: L("烘干", "Drying"), icon: "wind", tint: tint) }
             }
         }
     }

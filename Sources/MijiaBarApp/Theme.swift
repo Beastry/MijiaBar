@@ -59,6 +59,7 @@ extension DeviceCategory {
         case .kitchen: return "frying.pan"
         case .hood: return "fan.ceiling"
         case .lock: return "lock.fill"
+        case .airer: return "hanger"
         case .printer: return "printer"
         case .purifier: return "drop"
         case .other: return "square.grid.2x2"
@@ -84,6 +85,7 @@ extension DeviceCategory {
         case .kitchen: return .orange
         case .hood: return .orange
         case .lock: return .brown
+        case .airer: return .mint
         case .printer: return .blue
         case .purifier: return .blue
         case .other: return .indigo

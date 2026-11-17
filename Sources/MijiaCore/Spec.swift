@@ -80,12 +80,14 @@ public final class SpecStore: @unchecked Sendable {
     private var mem: [String: DeviceSpec] = [:]
     /// 正在下载的规格：同型号的多台设备同时打开时只下载一次
     private var inflight: [String: Task<DeviceSpec?, Error>] = [:]
-    private var indexTask: Task<[String: String], Error>?
+    /// 型号索引：新下载的用一天；网络不通时退回磁盘上过期的那份，10 分钟后再试
+    private var indexTask: (task: Task<(index: [String: String], fresh: Bool), Error>, loaded: Date)?
     private let lock = NSLock()
 
     public func spec(for model: String) async throws -> DeviceSpec? {
         if let s = lock.withLock({ mem[model] }) { return s }
-        let file = Paths.specs.appendingPathComponent(model + ".json")
+        // 型号来自云端或命令行参数，当文件名用之前去掉路径分隔符
+        let file = Paths.specs.appendingPathComponent(model.replacingOccurrences(of: "/", with: "_") + ".json")
         if let d = try? Data(contentsOf: file), let s = try? JSONDecoder().decode(DeviceSpec.self, from: d), !s.services.isEmpty {
             lock.withLock { mem[model] = s }; return s
         }
@@ -114,22 +116,40 @@ public final class SpecStore: @unchecked Sendable {
     }
 
     private func index() async throws -> [String: String] {
-        let task: Task<[String: String], Error> = lock.withLock {
-            if let t = indexTask { return t }
-            let t = Task { try await Self.loadIndex() }
-            indexTask = t; return t
+        let task = lock.withLock {
+            if let t = indexTask { return t.task }
+            let t = Task { try await Self.loadIndex(file: Paths.support.appendingPathComponent("spec-index.json")) { try await Self.fetchIndex() } }
+            indexTask = (t, Date()); return t
         }
-        do { return try await task.value } catch { lock.withLock { indexTask = nil }; throw error }
+        do {
+            let r = try await task.value
+            // App 会连续运行很多天：索引到期后丢掉内存里的这份，下次重新走磁盘 / 网络
+            lock.withLock { if let t = indexTask, t.task == task, Date().timeIntervalSince(t.loaded) > (r.fresh ? 86400 : 600) { indexTask = nil } }
+            return r.index
+        } catch { lock.withLock { if indexTask?.task == task { indexTask = nil } }; throw error }
     }
 
-    private static func loadIndex() async throws -> [String: String] {
-        let file = Paths.support.appendingPathComponent("spec-index.json")
-        if let attrs = try? FileManager.default.attributesOfItem(atPath: file.path), let m = attrs[.modificationDate] as? Date,
-           Date().timeIntervalSince(m) < 7 * 86400, let d = try? Data(contentsOf: file),
-           let idx = try? JSONDecoder().decode([String: String].self, from: d) { return idx }
+    private static func fetchIndex() async throws -> Data {
         let (d, r) = try await URLSession.shared.data(from: URL(string: "https://miot-spec.org/miot-spec-v2/instances?status=all")!)
         if let code = (r as? HTTPURLResponse)?.statusCode, code != 200 { throw CloudError.http(code) }
-        let obj = try JSONSerialization.jsonObject(with: d) as? [String: Any] ?? [:]
+        return d
+    }
+
+    /// 磁盘上 7 天内的索引直接用；否则重新下载。下载失败（离线、服务器故障）时退回过期的那份（fresh = false），
+    /// 不然索引一过期，没网的时候所有没缓存过规格的型号都打不开。
+    static func loadIndex(file: URL, now: Date = Date(), fetch: () async throws -> Data) async throws -> (index: [String: String], fresh: Bool) {
+        let cached = (try? Data(contentsOf: file)).flatMap { try? JSONDecoder().decode([String: String].self, from: $0) }
+        if let cached, let m = (try? FileManager.default.attributesOfItem(atPath: file.path))?[.modificationDate] as? Date,
+           now.timeIntervalSince(m) < 7 * 86400 { return (cached, true) }
+        do {
+            let idx = try await downloadIndex(to: file, fetch)
+            // 服务器返回 200 但内容不对时索引是空的：有旧的就用旧的，都算「不新鲜」，过一会儿重试
+            return idx.isEmpty ? (cached ?? idx, false) : (idx, true)
+        } catch { if let cached, !cached.isEmpty { return (cached, false) }; throw error }
+    }
+
+    private static func downloadIndex(to file: URL, _ fetch: () async throws -> Data) async throws -> [String: String] {
+        let obj = try JSONSerialization.jsonObject(with: try await fetch()) as? [String: Any] ?? [:]
         var best: [String: (String, Int, Bool)] = [:]
         for i in obj["instances"] as? [[String: Any]] ?? [] {
             guard let m = i["model"] as? String, let t = i["type"] as? String else { continue }

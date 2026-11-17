@@ -48,6 +48,32 @@ import Testing
         let v: [String: PropValue] = ["a": .bool(true), "b": .int(3), "c": .double(2.5), "d": .string("x"), "e": .null]
         #expect(try JSONDecoder().decode([String: PropValue].self, from: JSONEncoder().encode(v)) == v)
     }
+
+    @Test func strictCoercionRejectsValuesItCannotRead() throws {
+        // 命令行 / Agent：认不出的值要报错，不能悄悄变成 false（等于把设备关掉）
+        #expect(try PropValue.string("ON").strictlyCoerced(to: "bool") == .bool(true))
+        #expect(try PropValue.string("no").strictlyCoerced(to: "bool") == .bool(false))
+        #expect(try PropValue.int(1).strictlyCoerced(to: "bool") == .bool(true))
+        #expect(try PropValue.double(0).strictlyCoerced(to: "bool") == .bool(false))
+        for bad in [PropValue.string("banana"), .int(2), .double(0.5), .null] {
+            #expect(throws: MijiaError.self) { try bad.strictlyCoerced(to: "bool") }
+        }
+        #expect(try PropValue.string("26").strictlyCoerced(to: "uint8") == .int(26))
+        #expect(try PropValue.double(25.6).strictlyCoerced(to: "int32") == .int(26))
+        #expect(try PropValue.int(3).strictlyCoerced(to: "float") == .double(3))
+        for bad in [PropValue.string("warm"), .null, .double(.nan)] {
+            #expect(throws: MijiaError.self) { try bad.strictlyCoerced(to: "uint8") }
+        }
+        #expect(try PropValue.int(3).strictlyCoerced(to: "string") == .string("3"))
+        #expect(throws: MijiaError.self) { try PropValue.null.strictlyCoerced(to: "string") }
+    }
+
+    @Test func floatingPointValuesReadAsBooleans() {
+        // JSON 里的 1.0 / 0.0 也是开关状态（以前 double 一律读不出来，写进 bool 属性会变成 false）
+        #expect(PropValue.double(1).boolValue == true)
+        #expect(PropValue.double(0).boolValue == false)
+        #expect(PropValue.double(1).coerced(to: "bool") == .bool(true))
+    }
 }
 
 /// 精简过的空调规格，结构和 miot-spec.org 返回的一致
@@ -121,6 +147,15 @@ func acSpec() throws -> DeviceSpec {
             #expect(L("温度单元测试", "x") == "溫度單元測試")              // 第二次走缓存
         }
         with(.en) { #expect(L("设备", "Device") == "Device") }
+    }
+
+    @Test func fillsPlaceholdersInOrder() {
+        with(.en) {
+            #expect(LF("「%@」在%@", "%@ is in %@", "Lamp", "Study") == "Lamp is in Study")
+            // 参数本身带 %@（设备名可以随便起）：后面的参数不能填进它里面
+            #expect(LF("「%@」在%@", "%@ is in %@", "100%@ lamp", "Study") == "100%@ lamp is in Study")
+            #expect(LF("「%@」在%@", "%@ is in %@", "only one") == "only one is in %@")
+        }
     }
 
     @Test func translatesCommonValues() {
@@ -418,5 +453,64 @@ func acSpec() throws -> DeviceSpec {
         #expect(!s.allows("x", .motion) && s.allows("y", .motion))
         let d = UserDefaults(suiteName: "NotifyTest-\(UUID().uuidString)")!
         s.save(d); #expect(NotifySettings.load(d) == s)
+    }
+}
+
+@Suite struct PrivateFileTests {
+    @Test func writesOwnerOnlyFilesAndReplacesAtomically() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("mijiabar-private-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let f = dir.appendingPathComponent("devices.json")
+        #expect(writePrivate(Data("one".utf8), to: f))
+        // 已有文件权限较宽时，覆盖后也要收紧
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: f.path)
+        #expect(writePrivate(Data("two".utf8), to: f))
+        #expect(try String(contentsOf: f, encoding: .utf8) == "two")
+        #expect((try FileManager.default.attributesOfItem(atPath: f.path)[.posixPermissions] as? NSNumber)?.intValue == 0o600)
+        // 不留临时文件
+        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path) == ["devices.json"])
+        // 目录不存在：返回 false，不崩溃
+        #expect(!writePrivate(Data(), to: dir.appendingPathComponent("missing/x.json")))
+    }
+}
+
+@Suite struct SpecIndexTests {
+    struct Offline: Error {}
+    static let listing = Data(#"{"instances":[{"model":"a.b.c","type":"urn:new","version":2,"status":"released"}]}"#.utf8)
+    func temp(_ index: [String: String]?, age: TimeInterval) throws -> URL {
+        let f = FileManager.default.temporaryDirectory.appendingPathComponent("mijiabar-index-\(UUID().uuidString).json")
+        if let index {
+            try JSONEncoder().encode(index).write(to: f)
+            try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-age)], ofItemAtPath: f.path)
+        }
+        return f
+    }
+
+    @Test func recentIndexIsUsedWithoutDownloading() async throws {
+        let f = try temp(["a.b.c": "urn:old"], age: 86400); defer { try? FileManager.default.removeItem(at: f) }
+        let r = try await SpecStore.loadIndex(file: f) { Issue.record("should not download"); throw Offline() }
+        #expect(r.index == ["a.b.c": "urn:old"] && r.fresh)
+    }
+
+    @Test func expiredIndexIsRefreshed() async throws {
+        let f = try temp(["a.b.c": "urn:old"], age: 8 * 86400); defer { try? FileManager.default.removeItem(at: f) }
+        let r = try await SpecStore.loadIndex(file: f) { Self.listing }
+        #expect(r.index == ["a.b.c": "urn:new"] && r.fresh)
+        #expect(try JSONDecoder().decode([String: String].self, from: Data(contentsOf: f)) == ["a.b.c": "urn:new"])
+    }
+
+    @Test func expiredIndexStillWorksOffline() async throws {
+        // 离线、服务器故障、返回空内容：过期的索引也比没有强，但标记为不新鲜，稍后重试
+        let f = try temp(["a.b.c": "urn:old"], age: 30 * 86400); defer { try? FileManager.default.removeItem(at: f) }
+        let offline = try await SpecStore.loadIndex(file: f) { throw Offline() }
+        #expect(offline.index == ["a.b.c": "urn:old"] && !offline.fresh)
+        let empty = try await SpecStore.loadIndex(file: f) { Data(#"{"instances":[]}"#.utf8) }
+        #expect(empty.index == ["a.b.c": "urn:old"] && !empty.fresh)
+    }
+
+    @Test func noIndexAndNoNetworkIsAnError() async throws {
+        let f = try temp(nil, age: 0)
+        await #expect(throws: Offline.self) { _ = try await SpecStore.loadIndex(file: f) { throw Offline() } }
     }
 }

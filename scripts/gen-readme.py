@@ -40,8 +40,11 @@ login=["Click the 🏠 icon in the menu bar; a QR code appears.","Pick your serv
 agent_intro="Open **Settings → Agent interface**, click **Copy setup instructions** and paste the text into Claude Code, Codex, Cursor or any other agent. The agent finds the bundled CLI, registers the MCP server in its own config and verifies by listing your devices. The same text (with the path filled in) is printed by `mijiabar setup-prompt`:",
 perm_h="Permissions", perm=[("Off","Agents can do nothing"),("Read (default)","List devices and read state only"),("Allowlist","Control only the devices you tick"),("Full","Control every device")],
 confirm="With **Confirm every write** on, every change an agent makes shows a macOS dialog that you must approve.",
-cli_h="CLI", tools="MCP tools: `list_devices`, `get_device_state`, `set_property`, `run_action`.",
-build_note="Project layout: `Sources/MijiaCore` (cloud API, QR login, miIO, MIoT spec), `Sources/MijiaBarApp` (SwiftUI app), `Sources/mijiabar` (CLI + MCP). Translations live in `i18n/*.tsv`; run `scripts/gen-i18n.py` after editing.",
+cli_h="CLI", perm_head=("Mode","What agents can do"),
+tools="MCP tools: `list_devices`, `get_device_state`, `set_property`, `run_action`, plus `get_house*` / `set_house*` tools that only rearrange the house and never control a device ([docs/HOUSE.md](docs/HOUSE.md)).",
+links=[("Website","https://www.neardws.com/MijiaBar/"),("Download","https://github.com/neardws/MijiaBar/releases/latest"),("Agent setup guide","docs/AGENT_SETUP.md"),("House config","docs/HOUSE.md")],
+alt=dict(demo="Animated demo of the air conditioner card",list="Device list",ac_cool="Air conditioner card, cooling",fan="Fan card",list_dark="Device list in dark mode",ac_heat="Air conditioner card, heating, in dark mode",light_dark="Light card in dark mode",plug="Smart plug card",agent="Agent interface settings",login="QR sign-in screen",camera="Camera live view",doorbell="Doorbell live view in dark mode"),
+build_note="Project layout: `Sources/MijiaCore` (cloud API, QR login, miIO, MIoT spec), `Sources/MijiaBarApp` (SwiftUI app), `Sources/mijiabar` (CLI + MCP). Translations live in `i18n/*.tsv`; run `scripts/gen-i18n.py` after editing. Contributor notes are in [AGENTS.md](AGENTS.md), the design guide in [docs/DESIGN.md](docs/DESIGN.md).",
 credits="Motion design contributed by [@skyswordw](https://github.com/skyswordw) ([#1](https://github.com/neardws/MijiaBar/pull/1)). Protocol details from [python-miio](https://github.com/rytilahti/python-miio), [Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) and [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home). UI inspired by [@the_mcnaveen](https://x.com/the_mcnaveen)'s AC menu bar app.",
 lic_h="License",
 lic="""First-party MijiaBar source, scripts, tests, and documentation in this repository are licensed under the GNU General Public License, version 3 only ([GPL-3.0-only](LICENSE)). The grant names version 3 and stops there. `LICENSE` is the unmodified GNU GPL version 3. The same scope is written out in [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt).
@@ -76,8 +79,11 @@ login=["点菜单栏的 🏠 图标，会显示二维码。","选择服务器地
 agent_intro="打开 **设置 → Agent 接口**，点 **复制安装说明**，粘贴给 Claude Code、Codex、Cursor 等 Agent。Agent 会自己找到内置 CLI、在自己的配置里注册 MCP 服务器，并列出设备完成验证。`mijiabar setup-prompt` 会输出同样的内容（路径已填好）：",
 perm_h="权限", perm=[("关闭","Agent 什么都不能做"),("只读（默认）","只能列设备、读状态"),("白名单","只能控制你勾选的设备"),("全部","可以控制所有设备")],
 confirm="开启 **每次写操作弹窗确认** 后，Agent 的每次控制都会弹出系统对话框，需要你点「允许」。",
-cli_h="命令行", tools="MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`。",
-build_note="项目结构：`Sources/MijiaCore`（云端 API、扫码登录、miIO、MIoT 规格）、`Sources/MijiaBarApp`（SwiftUI 应用）、`Sources/mijiabar`（CLI + MCP）。翻译在 `i18n/*.tsv`，修改后运行 `scripts/gen-i18n.py`。",
+cli_h="命令行", perm_head=("模式","Agent 能做什么"),
+tools="MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`，以及只调整小屋、不控制设备的 `get_house*` / `set_house*`（见 [docs/HOUSE.md](docs/HOUSE.md)）。",
+links=[("官网","https://www.neardws.com/MijiaBar/zh-CN.html"),("下载","https://github.com/neardws/MijiaBar/releases/latest"),("Agent 安装指南","docs/AGENT_SETUP.zh-CN.md"),("小屋配置","docs/HOUSE.md")],
+alt=dict(demo="演示动画：空调卡片",list="设备列表",ac_cool="空调卡片（制冷）",fan="风扇卡片",list_dark="深色模式下的设备列表",ac_heat="深色模式下的空调卡片（制热）",light_dark="深色模式下的灯卡片",plug="智能插座卡片",agent="Agent 接口设置",login="扫码登录界面",camera="摄像机直播",doorbell="深色模式下的门铃直播"),
+build_note="项目结构：`Sources/MijiaCore`（云端 API、扫码登录、miIO、MIoT 规格）、`Sources/MijiaBarApp`（SwiftUI 应用）、`Sources/mijiabar`（CLI + MCP）。翻译在 `i18n/*.tsv`，修改后运行 `scripts/gen-i18n.py`。贡献须知见 [AGENTS.md](AGENTS.md)，设计规范见 [docs/DESIGN.md](docs/DESIGN.md)。",
 credits="动效设计由 [@skyswordw](https://github.com/skyswordw) 贡献（[#1](https://github.com/neardws/MijiaBar/pull/1)）。协议细节参考 [python-miio](https://github.com/rytilahti/python-miio)、[Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) 和 [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home)。界面灵感来自 [@the_mcnaveen](https://x.com/the_mcnaveen) 的空调菜单栏应用。",
 lic_h="许可证",
 lic="""本仓库中的第一方源代码、脚本、测试和文档，以 GNU 通用公共许可证第 3 版且仅此版本授权（[GPL-3.0-only](LICENSE)）。授权写明第 3 版，到此为止。`LICENSE` 是未经修改的 GNU GPL 第 3 版全文。同一范围说明见 [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt)。
@@ -112,8 +118,11 @@ login=["點選單列的 🏠 圖示，會顯示 QR 碼。","選擇伺服器地�
 agent_intro="開啟 **設定 → Agent 介面**，點 **複製安裝說明**，貼給 Claude Code、Codex、Cursor 等 Agent。Agent 會自己找到內建 CLI、在自己的設定裡註冊 MCP 伺服器，並列出裝置完成驗證。`mijiabar setup-prompt` 會輸出同樣的內容（路徑已填好）：",
 perm_h="權限", perm=[("關閉","Agent 什麼都不能做"),("唯讀（預設）","只能列出裝置、讀取狀態"),("白名單","只能控制你勾選的裝置"),("全部","可以控制所有裝置")],
 confirm="開啟 **每次寫入操作跳出視窗確認** 後，Agent 的每次控制都會跳出系統對話框，需要你點「允許」。",
-cli_h="命令列", tools="MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`。",
-build_note="專案結構：`Sources/MijiaCore`（雲端 API、掃碼登入、miIO、MIoT 規格）、`Sources/MijiaBarApp`（SwiftUI 應用程式）、`Sources/mijiabar`（CLI + MCP）。翻譯在 `i18n/*.tsv`，修改後執行 `scripts/gen-i18n.py`。",
+cli_h="命令列", perm_head=("模式","Agent 能做什麼"),
+tools="MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`，以及只調整小屋、不控制裝置的 `get_house*` / `set_house*`（見 [docs/HOUSE.md](docs/HOUSE.md)）。",
+links=[("官網","https://www.neardws.com/MijiaBar/"),("下載","https://github.com/neardws/MijiaBar/releases/latest"),("Agent 安裝指南","docs/AGENT_SETUP.zh-TW.md"),("小屋設定檔","docs/HOUSE.md")],
+alt=dict(demo="示範動畫：冷氣卡片",list="裝置清單",ac_cool="冷氣卡片（冷房）",fan="電風扇卡片",list_dark="深色模式下的裝置清單",ac_heat="深色模式下的冷氣卡片（暖房）",light_dark="深色模式下的燈卡片",plug="智慧插座卡片",agent="Agent 介面設定",login="掃碼登入畫面",camera="攝影機直播",doorbell="深色模式下的門鈴直播"),
+build_note="專案結構：`Sources/MijiaCore`（雲端 API、掃碼登入、miIO、MIoT 規格）、`Sources/MijiaBarApp`（SwiftUI 應用程式）、`Sources/mijiabar`（CLI + MCP）。翻譯在 `i18n/*.tsv`，修改後執行 `scripts/gen-i18n.py`。貢獻須知見 [AGENTS.md](AGENTS.md)，設計規範見 [docs/DESIGN.md](docs/DESIGN.md)。",
 credits="動態效果設計由 [@skyswordw](https://github.com/skyswordw) 貢獻（[#1](https://github.com/neardws/MijiaBar/pull/1)）。協定細節參考 [python-miio](https://github.com/rytilahti/python-miio)、[Xiaomi-cloud-tokens-extractor](https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor) 和 [ha_xiaomi_home](https://github.com/XiaoMi/ha_xiaomi_home)。介面靈感來自 [@the_mcnaveen](https://x.com/the_mcnaveen) 的冷氣選單列 App。",
 lic_h="授權條款",
 lic="""本儲存庫中的第一方原始碼、指令碼、測試和文件，以 GNU 通用公眾授權條款第 3 版且僅此版本授權（[GPL-3.0-only](LICENSE)）。授權寫明第 3 版，到此為止。`LICENSE` 是未經修改的 GNU GPL 第 3 版全文。同一範圍說明見 [LICENSES/GPL-3.0-only.txt](LICENSES/GPL-3.0-only.txt)。
@@ -127,15 +136,14 @@ Copyright (c) 2026 neardws。貢獻者保留其各自貢獻的著作權。本儲
 第三方元件仍使用各自的授權條款。內建的 [go2rtc](https://github.com/AlexxIT/go2rtc) 仍為 MIT：它是官方發佈套件，建置時驗證 SHA-256，且不進入本儲存庫。[Sparkle](https://sparkle-project.org/) 仍為 MIT，於建置時下載。動態效果設計仍致謝 [@skyswordw](https://github.com/skyswordw)，見上一節。
 
 本專案非小米官方專案，與小米無關。""")
-import re
 S="~/Library/Application Support/MijiaBar/"
 X={
 'en':("Auto-hidden devices",["A device is collapsed to the bottom of the list by default when either is true:","the cloud reports it offline (`isOnline = false`);","the cloud returns a last-online time (`last_online` / `lastOnline` / `last_online_time`) older than 30 days.","Click the eye button or **Show** to reveal them, or turn on **Settings → Devices → Show hidden devices**. Right-click a device to hide / unhide it manually — a manual choice always overrides the automatic rule."],
- "Where data is stored",["Sign-in session: macOS Keychain, service `com.neardws.MijiaBar` (account `session`). Signing out deletes it.",f"Device cache `devices.json`, preferences `prefs.json` (favorites, aliases, hidden flags, region), agent policy `agent.json`, and MIoT spec cache `spec-index.json` + `specs/<model>.json` — all in `{S}`, written with file mode 600.","UI language: `MijiaBarLang` in UserDefaults (shared by the app and CLI; `MIJIABAR_LANG` overrides it).","Nothing is sent anywhere except Xiaomi's servers, your devices on the LAN, and miot-spec.org (public spec downloads)."]),
+ "Where data is stored",["Sign-in session: macOS Keychain, service `com.neardws.MijiaBar` (account `session`). Signing out deletes it.",f"Device cache `devices.json`, preferences `prefs.json` (favorites, aliases, hidden flags, region), agent policy `agent.json`, and MIoT spec cache `spec-index.json` + `specs/<model>.json` — all in `{S}`, written with file mode 600.","House layout, pets and decor `house.json`: in iCloud Drive (`MijiaBar/house.json`) when iCloud Drive is on, so your Macs share it; otherwise in the same folder. `mijiabar house sync icloud|local|<folder>` moves it ([docs/HOUSE.md](docs/HOUSE.md)). It holds device and room ids, no credentials.",f"Sensor and power history: `history/<device>/<metric>.json` in `{S}` (raw samples for 31 days, daily summaries for 400), file mode 600, never uploaded.","UI language: `MijiaBarLang` in UserDefaults (shared by the app and CLI; `MIJIABAR_LANG` overrides it).","Network: MijiaBar only talks to Xiaomi's servers, your devices on the LAN, miot-spec.org (public spec downloads), and this project's site and GitHub Releases for update checks and downloads. No analytics."]),
 'zh-Hans':("默认隐藏规则",["满足任一条件的设备默认收起到列表底部：","云端报告离线（`isOnline = false`）；","云端返回了最后在线时间（`last_online` / `lastOnline` / `last_online_time`），且超过 30 天。","点眼睛按钮或「显示」可以展开，也可以在 **设置 → 设备管理 → 显示已隐藏的设备** 中打开。右键设备可以手动「隐藏 / 取消隐藏」，手动设置始终优先于自动规则。"],
- "数据存放",["登录凭据：macOS 钥匙串，服务名 `com.neardws.MijiaBar`（账户 `session`），退出登录即删除。",f"设备缓存 `devices.json`、偏好 `prefs.json`（收藏、别名、隐藏、地区）、Agent 权限 `agent.json`、MIoT 规格缓存 `spec-index.json` 和 `specs/<型号>.json`，都在 `{S}`，文件权限 600。","界面语言：UserDefaults 的 `MijiaBarLang`（App 和 CLI 共用，环境变量 `MIJIABAR_LANG` 可覆盖）。","除了小米服务器、局域网内的设备和 miot-spec.org（下载公开规格）之外，不向任何地方发送数据。"]),
+ "数据存放",["登录凭据：macOS 钥匙串，服务名 `com.neardws.MijiaBar`（账户 `session`），退出登录即删除。",f"设备缓存 `devices.json`、偏好 `prefs.json`（收藏、别名、隐藏、地区）、Agent 权限 `agent.json`、MIoT 规格缓存 `spec-index.json` 和 `specs/<型号>.json`，都在 `{S}`，文件权限 600。","小屋布局、宠物和装饰 `house.json`：开着 iCloud 云盘时放在 iCloud 云盘的 `MijiaBar/house.json`，多台 Mac 共用；否则放在同一目录。可用 `mijiabar house sync icloud|local|<文件夹>` 换位置（见 [docs/HOUSE.md](docs/HOUSE.md)）。里面只有设备和房间 id，没有任何凭据。",f"传感器和用电历史：`{S}` 下的 `history/<设备>/<指标>.json`（原始采样保留 31 天，按天汇总保留 400 天），文件权限 600，不上传。","界面语言：UserDefaults 的 `MijiaBarLang`（App 和 CLI 共用，环境变量 `MIJIABAR_LANG` 可覆盖）。","联网范围：只访问小米服务器、局域网内的设备、miot-spec.org（下载公开规格），以及用于检查和下载更新的本项目网站与 GitHub Releases。没有任何统计或埋点。"]),
 'zh-Hant':("預設隱藏規則",["符合任一條件的裝置預設收合到清單底部：","雲端回報離線（`isOnline = false`）；","雲端回傳了最後上線時間（`last_online` / `lastOnline` / `last_online_time`），且超過 30 天。","按眼睛按鈕或「顯示」可以展開，也可以在 **設定 → 裝置管理 → 顯示已隱藏的裝置** 中開啟。在裝置上按右鍵可以手動「隱藏 / 取消隱藏」，手動設定一律優先於自動規則。"],
- "資料存放位置",["登入憑證：macOS 鑰匙圈，服務名稱 `com.neardws.MijiaBar`（帳號 `session`），登出即刪除。",f"裝置快取 `devices.json`、偏好設定 `prefs.json`（收藏、別名、隱藏、地區）、Agent 權限 `agent.json`、MIoT 規格快取 `spec-index.json` 和 `specs/<型號>.json`，都在 `{S}`，檔案權限 600。","介面語言：UserDefaults 的 `MijiaBarLang`（App 與 CLI 共用，環境變數 `MIJIABAR_LANG` 可覆寫）。","除了小米伺服器、區域網路內的裝置和 miot-spec.org（下載公開規格）之外，不會將資料傳送到任何地方。"]),
+ "資料存放位置",["登入憑證：macOS 鑰匙圈，服務名稱 `com.neardws.MijiaBar`（帳號 `session`），登出即刪除。",f"裝置快取 `devices.json`、偏好設定 `prefs.json`（收藏、別名、隱藏、地區）、Agent 權限 `agent.json`、MIoT 規格快取 `spec-index.json` 和 `specs/<型號>.json`，都在 `{S}`，檔案權限 600。","小屋配置、寵物和裝飾 `house.json`：開啟 iCloud 雲碟時放在 iCloud 雲碟的 `MijiaBar/house.json`，多台 Mac 共用；否則放在同一個目錄。可用 `mijiabar house sync icloud|local|<檔案夾>` 更換位置（見 [docs/HOUSE.md](docs/HOUSE.md)）。裡面只有裝置和房間 id，沒有任何憑證。",f"感測器和用電歷史：`{S}` 下的 `history/<裝置>/<指標>.json`（原始取樣保留 31 天，每日彙總保留 400 天），檔案權限 600，不會上傳。","介面語言：UserDefaults 的 `MijiaBarLang`（App 與 CLI 共用，環境變數 `MIJIABAR_LANG` 可覆寫）。","連線範圍：只連線小米伺服器、區域網路內的裝置、miot-spec.org（下載公開規格），以及用來檢查和下載更新的本專案網站與 GitHub Releases。沒有任何統計或追蹤。"]),
 }
 LV={
 'en':("Live video (cameras)",["Camera and doorbell detail cards have a **Watch live** button: the video plays inline in the card, and the enlarge button pops it out into a resizable window.","It uses the bundled [go2rtc](https://github.com/AlexxIT/go2rtc) (MIT, official release, SHA-256 verified at build time) as a helper that only runs while you watch: it listens on `127.0.0.1` on a random port, has RTSP / WebRTC / HomeKit (mDNS) disabled, exposes only the player and `/api/ws`, stops 20 s after the player closes and is killed when MijiaBar quits.","Sign-in reuses the QR session: MijiaBar keeps the `passToken` returned by the QR login in the Keychain and hands it to go2rtc via a temporary `go2rtc.yaml` (mode 600, deleted as soon as go2rtc has read it). Sessions from before v0.1.8 need one more QR scan (**Settings → Camera live view**).","Stream keys come from the Xiaomi cloud on every connect; video comes from the camera over Xiaomi's P2P. Nothing is recorded. Battery doorbells are woken up and drain faster, so keep it short. Agents / MCP have no camera access.","Each device's detail header (and, subtly, its list row) shows which path the last read/control used: **LAN** (direct miIO), **Cloud** (fallback) or **BLE gateway**.","Away-from-home detection: MijiaBar compares the Mac's network subnets with the devices' local IPs (re-checked on every network change, nothing stored). When you're away it skips LAN attempts and goes straight to the cloud, and camera cards say live view is only available at home."]),
@@ -143,53 +151,63 @@ LV={
 'zh-Hant':("攝影機直播",["攝影機和門鈴的詳細卡片裡有 **看直播** 按鈕：畫面直接在卡片裡播放，按放大按鈕可以彈出可調整大小的獨立視窗。","播放由內建的 [go2rtc](https://github.com/AlexxIT/go2rtc)（MIT，官方發佈套件，建置時驗證 SHA-256）完成，只在觀看時執行：只監聽 `127.0.0.1` 的隨機埠，關閉 RTSP / WebRTC / HomeKit（mDNS），只開放播放器和 `/api/ws`；關閉畫面 20 秒後停止，完全結束 MijiaBar 時終止。","登入沿用掃碼工作階段：MijiaBar 把掃碼登入回傳的 `passToken` 存在鑰匙圈，透過暫時的 `go2rtc.yaml`（權限 600，go2rtc 讀入後立即刪除）交給 go2rtc。v0.1.8 之前的登入需要再掃一次碼（**設定 → 攝影機直播**）。","每次連線都會向小米雲端取得金鑰，影像經小米 P2P 從攝影機傳來，不做任何錄影。電池門鈴會被喚醒、耗電更快，請盡量短時間觀看。Agent / MCP 無法存取攝影機。","裝置詳細頁標題（以及清單列上的小圖示）顯示最近一次讀取/控制走的通道：**區域網路**（miIO 直連）、**雲端**（備援）或 **藍牙閘道**。","離家偵測：比較 Mac 目前網卡子網路和裝置的區域網路 IP（網路變化時重新判斷，不保存任何網路資訊）。不在家時略過區域網路直接走雲端，攝影機卡片提示只能在家裡看直播。"]),
 }
 
+# 「直播」一节里原来混着两条和摄像头无关的内容（通道标记、离家检测），单独成节
+NETH={'en':'Cloud and LAN','zh-Hans':'云端与局域网','zh-Hant':'雲端與區域網路'}
 DOCL={'en':('Full step-by-step instructions for agents:',''),'zh-Hans':('写给 Agent 的完整步骤：','.zh-CN'),'zh-Hant':('寫給 Agent 的完整步驟：','.zh-TW')}
+IMG='https://files.neardws.com/mijiabar/readme'
 def anchor(h): return re.sub(r'[^\w\- ]','',h.lower()).strip().replace(' ','-')
+def shots(alt,*names,head=''):
+    return f'<p align="center">{head}\n'+''.join(f'  <img src="{IMG}/{n}.webp" width="260" alt="{alt[k]}">\n' for n,k in names)+'</p>'
 cli='''```bash
-mijiabar list                     # list devices (--all, --refresh)
+mijiabar list                     # list devices (--all, --refresh, --json)
 mijiabar get <device>             # read state as JSON
 mijiabar set <device> <prop> <value>
 mijiabar action <device> <action> [JSON array]
+mijiabar house <subcommand>       # house layout, pets and decor (see: mijiabar house help)
 mijiabar mcp                      # stdio MCP server
 mijiabar setup-prompt             # print the agent setup instructions
 ```'''
 build='''```bash
 git clone https://github.com/neardws/MijiaBar && cd MijiaBar
 swift build
-.build/debug/MijiaBarApp --snapshot docs/screenshots   # demo-data screenshots
+scripts/test.sh                                  # unit tests
+.build/debug/MijiaBarApp --snapshot /tmp/shots   # every screen with demo data, light and dark
 scripts/package.sh   # dist/MijiaBar.app + DMG (signs & notarizes when a Developer ID is available)
 # env: VERSION, SIGN_IDENTITY ("-" = ad-hoc), NOTARY_PROFILE (default MijiaBar-notary)
 ```'''
 for lang,fn in files.items():
-    t=T[lang]
+    t=T[lang]; alt=t['alt']
     sw=' · '.join(f'<b>{names[l]}</b>' if l==lang else f'<a href="{f}">{names[l]}</a>' for l,f in files.items())
+    links=' · '.join(f'<a href="{u}">{n}</a>' for n,u in t['links'])
     hh,hl,dh,dl=X[lang]
     lvh,lvl=LV[lang]
-    toc=t['toc'][:4]+[hh,lvh]+t['toc'][4:6]+[dh]+t['toc'][6:]+[t['lic_h']]
+    neth=NETH[lang]
+    toc=t['toc'][:4]+[hh,neth,lvh]+t['toc'][4:6]+[dh]+t['toc'][6:]+[t['lic_h']]
     if '--reuse-prompts' in sys.argv:
         prompt=re.search(r'```text\n(.*?)\n```',open(fn).read(),re.S).group(1)
     else:
-        prompt=subprocess.run(['.build/debug/mijiabar','setup-prompt'],env={**os.environ,'MIJIABAR_LANG':lang},capture_output=True,text=True).stdout.rstrip()
-    o=[f'<p align="center"><img src="Resources/AppIcon.png" width="96" alt="MijiaBar"></p>' if os.path.exists('Resources/AppIcon.png') else '',
-       '<h1 align="center">MijiaBar</h1>',f'<p align="center">{t["tag"]}</p>','',badges,'',f'<p align="center">{sw}</p>','',
+        prompt=subprocess.run(['.build/debug/mijiabar','setup-prompt'],env={**os.environ,'MIJIABAR_LANG':lang},capture_output=True,text=True,check=True).stdout.rstrip()
+    o=['<p align="center"><img src="docs/assets/icon.png" width="96" alt="MijiaBar"></p>',
+       '<h1 align="center">MijiaBar</h1>',f'<p align="center">{t["tag"]}</p>','',f'<p align="center">{links}</p>','',badges,'',f'<p align="center">{sw}</p>','',
        f'> {t["note"]}','',
-       '<p align="center"><img src="https://files.neardws.com/mijiabar/readme/demo.gif" width="300" alt="demo"></p>','',
+       f'<p align="center"><img src="{IMG}/demo.gif" width="300" alt="{alt["demo"]}"></p>','',
        ' · '.join(f'[{h}](#{anchor(h)})' for h in toc),'',
        f'## {toc[0]}','']+[f'- {x}' for x in t['feat']]+['',
        f'## {toc[1]}','',
-       '<p align="center">\n  <img src="https://files.neardws.com/mijiabar/readme/list-light.webp" width="260" alt="">\n  <img src="https://files.neardws.com/mijiabar/readme/ac-cool-light.webp" width="260" alt="">\n  <img src="https://files.neardws.com/mijiabar/readme/fan-light.webp" width="260" alt="">\n</p>',
-       f'<p align="center"><b>{t["dark"]}</b><br>\n  <img src="https://files.neardws.com/mijiabar/readme/list-dark.webp" width="260" alt="">\n  <img src="https://files.neardws.com/mijiabar/readme/ac-heat-dark.webp" width="260" alt="">\n  <img src="https://files.neardws.com/mijiabar/readme/light-dark.webp" width="260" alt="">\n</p>',
-       '<p align="center">\n  <img src="https://files.neardws.com/mijiabar/readme/plug-light.webp" width="260" alt="">\n  <img src="https://files.neardws.com/mijiabar/readme/agent-light.webp" width="260" alt="">\n  <img src="https://files.neardws.com/mijiabar/readme/login-light.webp" width="260" alt="">\n</p>','',
+       shots(alt,('list-light','list'),('ac-cool-light','ac_cool'),('fan-light','fan')),
+       shots(alt,('list-dark','list_dark'),('ac-heat-dark','ac_heat'),('light-dark','light_dark'),head=f'<b>{t["dark"]}</b><br>'),
+       shots(alt,('plug-light','plug'),('agent-light','agent'),('login-light','login')),'',
        f'## {toc[2]}','']+[f'{i+1}. {x}' for i,x in enumerate(t['inst'])]+['',f'> {t["inst_note"]}','',t['req'],'',
        f'## {toc[3]}','']+[f'{i+1}. {x}' for i,x in enumerate(t['login'])]+['',
        f'## {hh}','',hl[0],'']+[f'- {x}' for x in hl[1:3]]+['',hl[3],'',
-       f'## {lvh}','']+[f'- {x}' for x in lvl]+['','<p align="center">\n  <img src="https://files.neardws.com/mijiabar/readme/camera-live-light.webp" width="260" alt="">\n  <img src="https://files.neardws.com/mijiabar/readme/doorbell-live-dark.webp" width="260" alt="">\n</p>','',
-       f'## {toc[6]}','',t['agent_intro'],'','```text',prompt,'```','',f'{DOCL[lang][0]} [docs/AGENT_SETUP{DOCL[lang][1]}.md](docs/AGENT_SETUP{DOCL[lang][1]}.md)','',
-       f'### {t["perm_h"]}','','| | |','| --- | --- |']+[f'| {a} | {b} |' for a,b in t['perm']]+['',t['confirm'],'',
+       f'## {neth}','']+[f'- {x}' for x in lvl[4:]]+['',
+       f'## {lvh}','']+[f'- {x}' for x in lvl[:4]]+['',shots(alt,('camera-live-light','camera'),('doorbell-live-dark','doorbell')),'',
+       f'## {toc[7]}','',t['agent_intro'],'','```text',prompt,'```','',f'{DOCL[lang][0]} [docs/AGENT_SETUP{DOCL[lang][1]}.md](docs/AGENT_SETUP{DOCL[lang][1]}.md)','',
+       f'### {t["perm_h"]}','',f'| {t["perm_head"][0]} | {t["perm_head"][1]} |','| --- | --- |']+[f'| {a} | {b} |' for a,b in t['perm']]+['',t['confirm'],'',
        f'### {t["cli_h"]}','',cli,'',t['tools'],'',
-       f'## {toc[7]}','',build,'',t['build_note'],'',
+       f'## {toc[8]}','',build,'',t['build_note'],'',
        f'## {dh}','']+[f'- {x}' for x in dl]+['',
-       f'## {toc[9]}','',t['credits'],'',
-       f'## {toc[10]}','',t['lic'],'']
-    open(fn,'w').write('\n'.join(x for x in o if x is not None).lstrip('\n'))
+       f'## {toc[10]}','',t['credits'],'',
+       f'## {toc[11]}','',t['lic'],'']
+    open(fn,'w',encoding='utf-8').write('\n'.join(o))
 print('ok')

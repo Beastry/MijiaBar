@@ -13,7 +13,7 @@
   "nav_download": "Download",
 
   "hero_title": "Your Mi Home.<br>Right in the menu bar.",
-  "hero_sub": "A pixel-art home at the top of the list, plus air conditioners, lights, fans and cameras — one click away, without reaching for your phone.",
+  "hero_sub": "Air conditioners, lights, fans and cameras in one click, with a pixel-art house on top. No phone needed.",
   "cta_download": "Download for Mac",
   "cta_github": "View on GitHub",
   "hero_fine": "Free and open source|macOS 14 or later|Apple silicon and Intel",
@@ -30,11 +30,13 @@
   "house_p1_t": "Fixture by fixture.",
   "house_p1_d": "Turn on one light and only that corner lights up — not the whole room.",
   "house_p2_t": "Day and night.",
-  "house_p2_d": "Separate baked art for daytime and evening, following your Mac's local clock (~6:00–17:59).",
+  "house_p2_d": "Daylight from 6:00 to 18:00 by your Mac's clock, a night scene after dark.",
   "house_p3_t": "Tap to toggle.",
   "house_p3_d": "Matched devices switch on or off right from the illustration.",
   "house_p4_t": "Room to breathe.",
   "house_p4_d": "Enlarge opens a dedicated House window when you want a closer look.",
+  "house_p5_t": "Pixel pets move in.",
+  "house_p5_d": "Up to three cats and dogs wander the rooms. Pick a coat, or generate one from a photo that never leaves your Mac.",
 
   "devices_eyebrow": "Device pages",
   "devices_title": "Every device looks and feels like the real thing.",

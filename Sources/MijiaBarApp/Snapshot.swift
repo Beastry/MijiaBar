@@ -50,6 +50,7 @@ extension AppModel {
             dev("d33", L("墙壁开关", "Wall switch"), "lumi.switch.demo", L("客厅", "Living room"), home: "h2"),
             dev("d34", L("油烟机", "Range hood"), "yunmi.hood.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d35", L("门锁", "Door lock"), "lumi.lock.demo", L("门口", "Entrance"), home: "h2"),
+            dev("d36", L("晾衣架", "Clothes airer"), "hyd.airer.demo", L("阳台", "Balcony"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -92,6 +93,12 @@ extension AppModel {
                 ValueOption(value: 0, description: "Closed"), ValueOption(value: 1, description: "Open")])]),
             S(3, "battery", [P(3, 1, "battery-level", "uint8", ["read"], range: [0, 100, 1], unit: "percentage")])])
         states["d35"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(0), "3.1": .int(80)], spec: lock, legacy: false, source: "cloud")
+        let airer = DeviceSpec(type: "urn:miot-spec-v2:device:airer:0", description: "Clothes airer", services: [
+            S(2, "airer", [P(2, 1, "current-position", "uint8", ["read"], range: [0, 100, 1], unit: "percentage"),
+                           P(2, 2, "target-position", "uint8", range: [0, 100, 1], unit: "percentage"),
+                           P(2, 3, "drying", "bool")]),
+            S(3, "light", [P(3, 1, "on", "bool")])])
+        states["d36"] = DeviceState(values: ["2.1": .int(100), "2.2": .int(100), "2.3": .bool(false), "3.1": .bool(true)], spec: airer, legacy: false, source: "cloud")
         let ht = DeviceSpec(type: "", description: "", services: [S(2, "temperature-humidity-sensor", [P(2, 1, "temperature", "float", ["read"], unit: "celsius"), P(2, 2, "relative-humidity", "uint8", ["read"], unit: "percentage")])])
         states["d6"] = DeviceState(values: ["2.1": .double(25.6), "2.2": .int(58)], spec: ht, legacy: false, source: "cloud")
         let derh = DeviceSpec(type: "", description: "", services: [S(2, "dehumidifier", [
@@ -246,6 +253,7 @@ struct ArtGallery: View {
             ("wall-switch", AnyView(WallSwitchArt(on: true, tint: .green)), AnyView(WallSwitchArt(on: false, tint: .green))),
             ("hood", AnyView(HoodArt(on: true, tint: DeviceCategory.hood.color)), AnyView(HoodArt(on: false, tint: DeviceCategory.hood.color))),
             ("lock", AnyView(LockArt(locked: true, tint: DeviceCategory.lock.color)), AnyView(LockArt(locked: false, tint: DeviceCategory.lock.color))),
+            ("airer", AnyView(AirerArt(lowered: true, lightOn: true, tint: DeviceCategory.airer.color)), AnyView(AirerArt(lowered: false, lightOn: false, tint: DeviceCategory.airer.color))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -454,6 +462,10 @@ enum Snapshot {
             m.page = .detail("d35"); render(root, f("lock"))
             m.states["d35"]?.values["2.1"] = .bool(false); render(root, f("lock-idle"))
             m.states["d35"]?.values["2.1"] = .bool(true)
+            m.page = .detail("d36"); render(root, f("airer"))
+            m.states["d36"]?.values["3.1"] = .bool(false); m.states["d36"]?.values["2.1"] = .int(0); m.states["d36"]?.values["2.2"] = .int(0)
+            render(root, f("airer-idle"))
+            m.states["d36"]?.values["3.1"] = .bool(true); m.states["d36"]?.values["2.1"] = .int(100); m.states["d36"]?.values["2.2"] = .int(100)
             m.states["d34"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))

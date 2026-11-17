@@ -290,6 +290,41 @@ struct HoodArt: View {
     }
 }
 
+struct AirerArt: View {
+    let lowered: Bool, lightOn: Bool, tint: Color
+    var body: some View {
+        let rackY: CGFloat = lowered ? 38 : -25
+        let midY: CGFloat = (102 + rackY) / 2
+        ZStack {
+            Ambient(tint, lightOn ? 0.4 : 0, width: 200, height: 120)
+            RoundedRectangle(cornerRadius: 3).fill(aluminum).frame(width: 204, height: 4).offset(y: -59)
+            RoundedRectangle(cornerRadius: 7).appliance(tint, lightOn ? 0.3 : 0)
+                .frame(width: 166, height: 22).offset(y: -46)
+            Capsule().fill(lightOn ? Color.yellow : Color(white: 0.55))
+                .frame(width: 112, height: 4).offset(y: -35)
+            ForEach([-65.0, 65.0], id: \.self) { position in
+                Path { path in
+                    path.move(to: CGPoint(x: 120 + position, y: 34))
+                    path.addLine(to: CGPoint(x: 120 + position - 7, y: midY))
+                    path.addLine(to: CGPoint(x: 120 + position, y: 68 + rackY))
+                    path.move(to: CGPoint(x: 120 + position - 7, y: 34))
+                    path.addLine(to: CGPoint(x: 120 + position, y: midY))
+                    path.addLine(to: CGPoint(x: 120 + position - 7, y: 68 + rackY))
+                }.stroke(Color(white: 0.6), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            }
+            ForEach([-9.0, 9.0], id: \.self) { offset in
+                Capsule().fill(aluminum).frame(width: 212, height: 5).offset(y: rackY + offset)
+            }
+            ForEach([-82.0, 82.0], id: \.self) { position in
+                RoundedRectangle(cornerRadius: 2).fill(tint.opacity(0.8))
+                    .frame(width: 5, height: 23).offset(x: position, y: rackY)
+            }
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 struct LockArt: View {
     let locked: Bool, tint: Color
     var body: some View {

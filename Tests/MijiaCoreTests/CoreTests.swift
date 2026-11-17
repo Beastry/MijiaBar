@@ -181,6 +181,14 @@ func acSpec() throws -> DeviceSpec {
             ("mijia.dehumidifier.jsq", .dehumidifier),
             ("yunmi.hood.w1", .hood), ("viomi.hood.v1", .hood), ("YUNMI.HOOD.DEMO", .hood),
             ("lumi.lock.acn02", .lock), ("loock.lock.t1", .lock), ("LUMI.LOCK.DEMO", .lock),
+            ("hyd.airer.znlyj4", .airer), ("yeelight.airer.l1", .airer), ("HYD.AIRER.DEMO", .airer),
+            ("zhimi.airpurifier.m1", .airPurifier), ("xiaomi.washer.demo", .washer), ("xiaomi.dryer.demo", .washer),
+            ("xiaomi.printer.airer.demo", .printer), ("lumi.curtain.airer.demo", .curtain),
+            ("xiaomi.fridge.airer.demo", .fridge), ("xiaomi.dishwasher.airer.demo", .kitchen),
+            ("xiaomi.washer.airer.demo", .washer), ("xiaomi.waterheater.airer.demo", .waterHeater),
+            ("zhimi.airpurifier.airer.demo", .airPurifier), ("yunmi.hood.airer.demo", .hood),
+            ("lumi.lock.airer.demo", .lock), ("chuangmi.plug.airer.demo", .plug),
+            ("vendor.air.demo", .other),
             ("yeelink.clock.bifrost", .other),
         ]
         for (model, cat) in cases { #expect(DeviceCategory.guess(model) == cat, "\(model)") }

@@ -13,6 +13,7 @@ struct TypeDetailView: View {
         case .hood: HoodDetail(dc: dc)
         case .lock: LockDetail(dc: dc)
         case .airer: AirerDetail(dc: dc)
+        case .clock: ClockDetail(dc: dc)
         case .humidifier: HumidifierDetail(dc: dc)
         case .vacuum: VacuumDetail(dc: dc)
         case .fridge: FridgeDetail(dc: dc)
@@ -90,6 +91,7 @@ struct DeviceStatusCard: View {
     case .hood: HoodArt(on: false, tint: tint)
     case .lock: LockArt(locked: false, tint: tint)
     case .airer: AirerArt(lowered: false, lightOn: false, tint: tint)
+    case .clock: ClockArt(on: false, tint: tint)
     case .ac: ACIllustration(on: false, tint: tint)
     case .fan: FanArt(on: false, level: 0.5, swing: false, tint: tint)
     case .light: BulbArt(on: false, brightness: 0.7, kelvin: nil)
@@ -288,6 +290,29 @@ struct AirerDetail: View {
                 if let light { PropTile(dc: dc, prop: light, title: L("照明", "Light"), icon: "lightbulb", tint: tint) }
                 if let position { PropTile(dc: dc, prop: position, title: L("当前位置", "Position"), icon: "arrow.up.and.down", tint: tint) }
                 if let drying = dc.p("drying") { PropTile(dc: dc, prop: drying, title: L("烘干", "Drying"), icon: "wind", tint: tint) }
+            }
+        }
+    }
+}
+
+struct ClockDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var light: SpecProperty? { dc.p("on", in: "light") ?? dc.p("on") ?? dc.spec?.mainOnProperty }
+    var power: SpecProperty? { light.flatMap { $0.writable && $0.format == "bool" ? $0 : nil } }
+    var on: Bool { dc.bool(light) ?? false }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on, title: on ? L("已开启", "On") : L("已关闭", "Off"),
+                  subtitle: L("闹钟", "Clock"), powerOn: dc.bool(light),
+                  onPower: power.map { prop in { m.write(device, prop.key, .bool(!on)) } }) {
+            ClockArt(on: on, tint: tint)
+        } content: {
+            if let brightness = primarySliderProp(dc) { PropSlider(dc: dc, prop: brightness, colors: [.gray, tint], enabled: on) }
+            HStack(spacing: 8) {
+                if let brightness = dc.p("brightness") { PropTile(dc: dc, prop: brightness, title: L("亮度", "Brightness"), icon: "sun.max", tint: tint) }
+                if let alarm = dc.p("on", in: "alarm") { PropTile(dc: dc, prop: alarm, title: L("闹钟", "Alarm"), icon: "alarm", tint: tint) }
+                if let battery = dc.p("battery-level") { PropTile(dc: dc, prop: battery, title: L("电量", "Battery"), icon: "battery.75percent", tint: tint) }
             }
         }
     }

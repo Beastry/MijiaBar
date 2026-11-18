@@ -189,7 +189,8 @@ func acSpec() throws -> DeviceSpec {
             ("zhimi.airpurifier.airer.demo", .airPurifier), ("yunmi.hood.airer.demo", .hood),
             ("lumi.lock.airer.demo", .lock), ("chuangmi.plug.airer.demo", .plug),
             ("vendor.air.demo", .other),
-            ("yeelink.clock.bifrost", .other),
+            ("yeelink.clock.bifrost", .clock), ("yeelight.clock.l1", .clock), ("YEELINK.CLOCK.DEMO", .clock),
+            ("vendor.clockless.demo", .other),
         ]
         for (model, cat) in cases { #expect(DeviceCategory.guess(model) == cat, "\(model)") }
     }

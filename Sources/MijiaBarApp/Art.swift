@@ -325,6 +325,30 @@ struct AirerArt: View {
     }
 }
 
+struct ClockArt: View {
+    let on: Bool, tint: Color
+    var body: some View {
+        ZStack {
+            Ambient(tint, on ? 0.45 : 0, width: 200, height: 120)
+            RoundedRectangle(cornerRadius: 5).fill(aluminum).frame(width: 38, height: 20).offset(y: 42)
+            Capsule().fill(aluminum).frame(width: 88, height: 7).offset(y: 53)
+            RoundedRectangle(cornerRadius: 22).appliance(tint, on ? 0.25 : 0)
+                .frame(width: 172, height: 94).offset(y: -4)
+            RoundedRectangle(cornerRadius: 17).fill(darkGlass)
+                .overlay(RoundedRectangle(cornerRadius: 17).stroke(Theme.stroke, lineWidth: 1))
+                .frame(width: 154, height: 76).offset(y: -4)
+            Ellipse().fill(RadialGradient(colors: [tint.opacity(on ? 0.22 : 0), .clear], center: .center, startRadius: 0, endRadius: 66))
+                .frame(width: 144, height: 62).offset(y: -4)
+            Text(verbatim: "07:30").font(.system(size: 39, weight: .light, design: .monospaced))
+                .foregroundStyle(on ? tint : Color(white: 0.26)).offset(y: -6)
+            Capsule().fill(on ? tint.opacity(0.8) : Color(white: 0.3))
+                .frame(width: 46, height: 2).offset(y: 26)
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 struct LockArt: View {
     let locked: Bool, tint: Color
     var body: some View {

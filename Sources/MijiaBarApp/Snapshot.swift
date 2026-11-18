@@ -51,6 +51,7 @@ extension AppModel {
             dev("d34", L("油烟机", "Range hood"), "yunmi.hood.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d35", L("门锁", "Door lock"), "lumi.lock.demo", L("门口", "Entrance"), home: "h2"),
             dev("d36", L("晾衣架", "Clothes airer"), "hyd.airer.demo", L("阳台", "Balcony"), home: "h2"),
+            dev("d37", L("闹钟", "Clock"), "yeelink.clock.demo", L("主卧", "Bedroom"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -99,6 +100,11 @@ extension AppModel {
                            P(2, 3, "drying", "bool")]),
             S(3, "light", [P(3, 1, "on", "bool")])])
         states["d36"] = DeviceState(values: ["2.1": .int(100), "2.2": .int(100), "2.3": .bool(false), "3.1": .bool(true)], spec: airer, legacy: false, source: "cloud")
+        let clock = DeviceSpec(type: "urn:miot-spec-v2:device:clock:0", description: "Clock", services: [
+            S(2, "light", [P(2, 1, "on", "bool"), P(2, 2, "brightness", "uint8", range: [1, 100, 1], unit: "percentage")]),
+            S(3, "alarm", [P(3, 1, "on", "bool")]),
+            S(4, "battery", [P(4, 1, "battery-level", "uint8", ["read"], range: [0, 100, 1], unit: "percentage")])])
+        states["d37"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(80), "3.1": .bool(true), "4.1": .int(90)], spec: clock, legacy: false, source: "cloud")
         let ht = DeviceSpec(type: "", description: "", services: [S(2, "temperature-humidity-sensor", [P(2, 1, "temperature", "float", ["read"], unit: "celsius"), P(2, 2, "relative-humidity", "uint8", ["read"], unit: "percentage")])])
         states["d6"] = DeviceState(values: ["2.1": .double(25.6), "2.2": .int(58)], spec: ht, legacy: false, source: "cloud")
         let derh = DeviceSpec(type: "", description: "", services: [S(2, "dehumidifier", [
@@ -254,6 +260,7 @@ struct ArtGallery: View {
             ("hood", AnyView(HoodArt(on: true, tint: DeviceCategory.hood.color)), AnyView(HoodArt(on: false, tint: DeviceCategory.hood.color))),
             ("lock", AnyView(LockArt(locked: true, tint: DeviceCategory.lock.color)), AnyView(LockArt(locked: false, tint: DeviceCategory.lock.color))),
             ("airer", AnyView(AirerArt(lowered: true, lightOn: true, tint: DeviceCategory.airer.color)), AnyView(AirerArt(lowered: false, lightOn: false, tint: DeviceCategory.airer.color))),
+            ("clock", AnyView(ClockArt(on: true, tint: DeviceCategory.clock.color)), AnyView(ClockArt(on: false, tint: DeviceCategory.clock.color))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -466,6 +473,9 @@ enum Snapshot {
             m.states["d36"]?.values["3.1"] = .bool(false); m.states["d36"]?.values["2.1"] = .int(0); m.states["d36"]?.values["2.2"] = .int(0)
             render(root, f("airer-idle"))
             m.states["d36"]?.values["3.1"] = .bool(true); m.states["d36"]?.values["2.1"] = .int(100); m.states["d36"]?.values["2.2"] = .int(100)
+            m.page = .detail("d37"); render(root, f("clock"))
+            m.states["d37"]?.values["2.1"] = .bool(false); render(root, f("clock-idle"))
+            m.states["d37"]?.values["2.1"] = .bool(true)
             m.states["d34"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))

@@ -1412,6 +1412,42 @@ struct LeakSensorArt: View {
     }
 }
 
+struct SmokeArt: View {
+    let on: Bool, alarm: Bool?, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        PowerTimeline(on: on) { _, k in
+            let status = alarm == true ? Color.orange : tint
+            let level = alarm == nil ? 0 : k
+            ZStack {
+                Ambient(status, level * (alarm == true ? 0.8 : 0.3), width: 160, height: 124).position(x: 80, y: 68)
+                Ellipse().fill(LinearGradient(colors: [Color(white: 0.82), Color(white: 0.64)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 120, height: 94).position(x: 80, y: 73)
+                    .shadow(color: .black.opacity(0.18), radius: 5, y: 4)
+                Ellipse().appliance(status, level * 0.4).frame(width: 120, height: 94).position(x: 80, y: 65)
+                Ellipse().fill(shellFill).overlay(Ellipse().stroke(Color.black.opacity(0.08), lineWidth: 0.75))
+                    .frame(width: 102, height: 78).position(x: 80, y: 65)
+                ForEach(0..<28, id: \.self) { index in
+                    let angle: CGFloat = CGFloat(index) * .pi * 2 / 28
+                    Capsule().fill(Color(white: 0.48))
+                        .overlay(Capsule().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
+                        .frame(width: 3, height: 12)
+                        .rotationEffect(.radians(Double(angle)))
+                        .position(x: 80 + sin(angle) * 43, y: 65 - cos(angle) * 31)
+                }
+                Ellipse().fill(shellFill).overlay(Ellipse().stroke(Color.white.opacity(0.8), lineWidth: 1))
+                    .frame(width: 56, height: 40).position(x: 80, y: 65)
+                Circle().fill(Color(white: 0.58)).frame(width: 5, height: 5).position(x: 80, y: 65)
+                Circle().fill(status).frame(width: 5, height: 5).opacity(level).position(x: 80, y: 65)
+                Glow(status, level * 0.9, diameter: 5, softness: alarm == true ? 12 : 4).position(x: 80, y: 65)
+            }
+            .frame(width: 160, height: 136)
+            .animation(reduceMotion ? nil : Motion.smooth, value: alarm)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
 /// 通用智能设备（没有专门插画的类型）：白色亮面方形主机，正面一个磨砂圆形按键，下方一条指示灯带。
 /// 开机时灯带亮起设备色、身后带环境光；不画镜头之类会被误认成具体设备的部件，静止画面不加动画。
 struct GenericArt: View {

@@ -71,7 +71,7 @@ struct CardModel {
         .heater: ["target-temperature", "heat-level", "temperature"],
         .dehumidifier: ["target-humidity", "relative-humidity"],
         .plug: ["electric-power", "power-consumption", "temperature"],
-        .sensor: ["temperature", "relative-humidity", "illumination", "battery-level"],
+        .sensor: ["temperature", "relative-humidity", "illumination", "smoke-detection", "battery-level"],
         .speaker: ["volume"], .tv: ["volume"],
         .airPurifier: ["pm2.5-density", "air-quality-index", "fan-level"],
     ]

@@ -119,6 +119,7 @@ struct DeviceStatusCard: View {
         case .motion: MotionSensorArt(on: false, tint: tint)
         case .contact: ContactSensorArt(on: false, open: nil, tint: tint)
         case .leak: LeakSensorArt(on: false, wet: nil, tint: tint)
+        case .smoke: SmokeArt(on: false, alarm: nil, tint: tint)
         default: ThermoArt(temp: nil, tint: tint)
         }
     case .fridge: FridgeArt(on: false, tint: tint)
@@ -929,6 +930,7 @@ struct SensorDetail: View {
         let t = dc.num(dc.p("temperature")), h = dc.num(dc.p("relative-humidity"))
         if dc.p("contact-state") != nil || d.form == .contact { ContactSensorDetail(dc: dc) }
         else if dc.p("submersion-state") != nil || d.form == .leak { LeakSensorDetail(dc: dc) }
+        else if dc.p("smoke-detection") != nil || d.form == .smoke { SmokeSensorDetail(dc: dc) }
         else if dc.p("temperature") == nil { MotionSensorDetail(dc: dc) } else {
         TypeShell(device: d, tint: tint, isOn: d.isOnline, title: d.isOnline ? L("在线", "Online") : L("离线", "Offline"), subtitle: L("传感器", "Sensor")) {
             ThermoArt(temp: t, tint: tint)
@@ -994,6 +996,22 @@ struct LeakSensorDetail: View {
         } content: {
             ReadoutRow(items: [("battery.75percent", dc.num(dc.p("battery-level")).map { L("电量 ", "Battery ") + "\(Int($0))%" })], tint: tint)
             SensorHistoryCard(device: d, metric: "leak", title: L("浸水记录", "Leak history"), style: .state(on: L("检测到浸水", "Water detected"), off: L("恢复正常", "Dry again")), tint: .orange)
+        }
+    }
+}
+
+struct SmokeSensorDetail: View {
+    let dc: DC
+    var body: some View {
+        let d = dc.device
+        let alarm = dc.bool(dc.p("smoke-detection"))
+        let tint = alarm == true ? Color.orange : Color.mint
+        let title = !d.isOnline ? L("离线", "Offline") : alarm.map { $0 ? L("检测到烟雾", "Smoke detected") : L("无烟雾", "No smoke") } ?? L("在线", "Online")
+        TypeShell(device: d, tint: tint, isOn: d.isOnline, title: title, subtitle: L("烟雾传感器", "Smoke sensor")) {
+            SmokeArt(on: d.isOnline, alarm: alarm, tint: tint)
+        } content: {
+            ReadoutRow(items: [("battery.75percent", dc.num(dc.p("battery-level")).map { L("电量 ", "Battery ") + "\(Int($0))%" })], tint: tint)
+            SensorHistoryCard(device: d, metric: "smoke", title: L("烟雾记录", "Smoke history"), style: .state(on: L("检测到烟雾", "Smoke detected"), off: L("恢复正常", "Clear again")), tint: .orange)
         }
     }
 }

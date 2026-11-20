@@ -191,6 +191,11 @@ func acSpec() throws -> DeviceSpec {
             ("vendor.air.demo", .other),
             ("yeelink.clock.bifrost", .clock), ("yeelight.clock.l1", .clock), ("YEELINK.CLOCK.DEMO", .clock),
             ("vendor.clockless.demo", .other),
+            ("lumi.sensor_smoke.v1", .sensor), ("jiaoyan.smoke.t1", .sensor), ("LUMI.SENSOR_SMOKE.DEMO", .sensor),
+            ("lumi.sensor_motion.demo", .sensor), ("lumi.sensor_magnet.aq2", .sensor),
+            ("lumi.flood.agl02", .sensor), ("miaomiaoce.sensor_ht.t2", .sensor),
+            ("xiaomi.printer.smoke.demo", .printer), ("lumi.curtain.smoke.demo", .curtain),
+            ("yeelink.light.smoke.demo", .light),
         ]
         for (model, cat) in cases { #expect(DeviceCategory.guess(model) == cat, "\(model)") }
     }

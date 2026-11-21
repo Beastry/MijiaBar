@@ -59,6 +59,8 @@ extension DeviceCategory {
         case .kitchen: return "frying.pan"
         case .hood: return "fan.ceiling"
         case .lock: return "lock.fill"
+        case .airer: return "hanger"
+        case .clock: return "deskclock"
         case .printer: return "printer"
         case .purifier: return "drop"
         case .other: return "square.grid.2x2"
@@ -84,6 +86,8 @@ extension DeviceCategory {
         case .kitchen: return .orange
         case .hood: return .orange
         case .lock: return .brown
+        case .airer: return .mint
+        case .clock: return Color(red: 0.95, green: 0.70, blue: 0.25)
         case .printer: return .blue
         case .purifier: return .blue
         case .other: return .indigo
@@ -97,7 +101,7 @@ extension DeviceCategory {
 }
 
 /// 同一类别里外形不一样的设备：插画和列表图标按型号区分
-enum DeviceForm { case doorbell, motion, contact, leak, kettle, dishwasher, juicer, ihcooker, mfcp, wallSwitch }
+enum DeviceForm { case doorbell, motion, contact, leak, smoke, kettle, dishwasher, juicer, ihcooker, mfcp, wallSwitch }
 
 extension Device {
     var form: DeviceForm? {
@@ -114,6 +118,7 @@ extension Device {
             if m.contains("ihcooker") { return .ihcooker }
             return m.contains("mfcp") ? .mfcp : nil
         case .sensor:
+            if m.contains("smoke") { return .smoke }
             if m.contains("magnet") { return .contact }
             if m.contains("flood") || m.contains("wleak") { return .leak }
             return m.contains("motion") ? .motion : nil
@@ -126,6 +131,7 @@ extension Device {
         case .motion: return "figure.walk.motion"
         case .contact: return "door.left.hand.closed"
         case .leak: return "drop.triangle"
+        case .smoke: return "smoke"
         case .kettle: return "mug"
         case .dishwasher: return "dishwasher"
         case .juicer: return "cup.and.saucer"

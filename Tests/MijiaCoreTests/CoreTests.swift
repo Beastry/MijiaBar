@@ -216,7 +216,21 @@ func acSpec() throws -> DeviceSpec {
             ("mijia.dehumidifier.jsq", .dehumidifier),
             ("yunmi.hood.w1", .hood), ("viomi.hood.v1", .hood), ("YUNMI.HOOD.DEMO", .hood),
             ("lumi.lock.acn02", .lock), ("loock.lock.t1", .lock), ("LUMI.LOCK.DEMO", .lock),
-            ("yeelink.clock.bifrost", .other),
+            ("hyd.airer.znlyj4", .airer), ("yeelight.airer.l1", .airer), ("HYD.AIRER.DEMO", .airer),
+            ("zhimi.airpurifier.m1", .airPurifier), ("xiaomi.washer.demo", .washer), ("xiaomi.dryer.demo", .washer),
+            ("xiaomi.printer.airer.demo", .printer), ("lumi.curtain.airer.demo", .curtain),
+            ("xiaomi.fridge.airer.demo", .fridge), ("xiaomi.dishwasher.airer.demo", .kitchen),
+            ("xiaomi.washer.airer.demo", .washer), ("xiaomi.waterheater.airer.demo", .waterHeater),
+            ("zhimi.airpurifier.airer.demo", .airPurifier), ("yunmi.hood.airer.demo", .hood),
+            ("lumi.lock.airer.demo", .lock), ("chuangmi.plug.airer.demo", .plug),
+            ("vendor.air.demo", .other),
+            ("yeelink.clock.bifrost", .clock), ("yeelight.clock.l1", .clock), ("YEELINK.CLOCK.DEMO", .clock),
+            ("vendor.clockless.demo", .other),
+            ("lumi.sensor_smoke.v1", .sensor), ("jiaoyan.smoke.t1", .sensor), ("LUMI.SENSOR_SMOKE.DEMO", .sensor),
+            ("lumi.sensor_motion.demo", .sensor), ("lumi.sensor_magnet.aq2", .sensor),
+            ("lumi.flood.agl02", .sensor), ("miaomiaoce.sensor_ht.t2", .sensor),
+            ("xiaomi.printer.smoke.demo", .printer), ("lumi.curtain.smoke.demo", .curtain),
+            ("yeelink.light.smoke.demo", .light),
         ]
         for (model, cat) in cases { #expect(DeviceCategory.guess(model) == cat, "\(model)") }
     }

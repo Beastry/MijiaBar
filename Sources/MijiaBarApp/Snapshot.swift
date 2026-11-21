@@ -50,6 +50,9 @@ extension AppModel {
             dev("d33", L("墙壁开关", "Wall switch"), "lumi.switch.demo", L("客厅", "Living room"), home: "h2"),
             dev("d34", L("油烟机", "Range hood"), "yunmi.hood.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d35", L("门锁", "Door lock"), "lumi.lock.demo", L("门口", "Entrance"), home: "h2"),
+            dev("d36", L("晾衣架", "Clothes airer"), "hyd.airer.demo", L("阳台", "Balcony"), home: "h2"),
+            dev("d37", L("闹钟", "Clock"), "yeelink.clock.demo", L("主卧", "Bedroom"), home: "h2"),
+            dev("d38", L("烟雾传感器", "Smoke sensor"), "lumi.sensor_smoke.demo", L("厨房", "Kitchen"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -76,6 +79,7 @@ extension AppModel {
         Recorder.shared.seed("d5", "power", Self.demoPowerSeries())
         Recorder.shared.seed("d6", "temperature", Self.demoWave(25.6, 2.2)); Recorder.shared.seed("d6", "humidity", Self.demoWave(58, 6))
         Recorder.shared.seed("d12", "contact", Self.demoToggles()); Recorder.shared.seed("d13", "leak", Self.demoToggles(start: 0))
+        Recorder.shared.seed("d38", "smoke", Self.demoToggles(start: 0))
         Recorder.shared.seed("d26", "illumination", Self.demoWave(320, 120))
         states["d5"] = DeviceState(values: ["2.1": .bool(true), "11.2": .double(36.5)], spec: plug, legacy: false, source: "cloud")
         let wallSwitch = DeviceSpec(type: "", description: "", services: [S(2, "switch", [
@@ -92,6 +96,17 @@ extension AppModel {
                 ValueOption(value: 0, description: "Closed"), ValueOption(value: 1, description: "Open")])]),
             S(3, "battery", [P(3, 1, "battery-level", "uint8", ["read"], range: [0, 100, 1], unit: "percentage")])])
         states["d35"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(0), "3.1": .int(80)], spec: lock, legacy: false, source: "cloud")
+        let airer = DeviceSpec(type: "urn:miot-spec-v2:device:airer:0", description: "Clothes airer", services: [
+            S(2, "airer", [P(2, 1, "current-position", "uint8", ["read"], range: [0, 100, 1], unit: "percentage"),
+                           P(2, 2, "target-position", "uint8", range: [0, 100, 1], unit: "percentage"),
+                           P(2, 3, "drying", "bool")]),
+            S(3, "light", [P(3, 1, "on", "bool")])])
+        states["d36"] = DeviceState(values: ["2.1": .int(100), "2.2": .int(100), "2.3": .bool(false), "3.1": .bool(true)], spec: airer, legacy: false, source: "cloud")
+        let clock = DeviceSpec(type: "urn:miot-spec-v2:device:clock:0", description: "Clock", services: [
+            S(2, "light", [P(2, 1, "on", "bool"), P(2, 2, "brightness", "uint8", range: [1, 100, 1], unit: "percentage")]),
+            S(3, "alarm", [P(3, 1, "on", "bool")]),
+            S(4, "battery", [P(4, 1, "battery-level", "uint8", ["read"], range: [0, 100, 1], unit: "percentage")])])
+        states["d37"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(80), "3.1": .bool(true), "4.1": .int(90)], spec: clock, legacy: false, source: "cloud")
         let ht = DeviceSpec(type: "", description: "", services: [S(2, "temperature-humidity-sensor", [P(2, 1, "temperature", "float", ["read"], unit: "celsius"), P(2, 2, "relative-humidity", "uint8", ["read"], unit: "percentage")])])
         states["d6"] = DeviceState(values: ["2.1": .double(25.6), "2.2": .int(58)], spec: ht, legacy: false, source: "cloud")
         let derh = DeviceSpec(type: "", description: "", services: [S(2, "dehumidifier", [
@@ -111,6 +126,8 @@ extension AppModel {
         states["d12"] = DeviceState(values: ["2.1": .bool(false), "3.1": .int(82)], spec: magnet, legacy: false, source: "cloud")
         let flood = DeviceSpec(type: "", description: "", services: [S(2, "submersion-sensor", [P(2, 1, "submersion-state", "bool", ["read", "notify"])]), battery])
         states["d13"] = DeviceState(values: ["2.1": .bool(true), "3.1": .int(91)], spec: flood, legacy: false, source: "cloud")
+        let smoke = DeviceSpec(type: "urn:miot-spec-v2:device:smoke-sensor:0", description: "Smoke sensor", services: [S(2, "smoke-sensor", [P(2, 1, "smoke-detection", "bool", ["read", "notify"])]), battery])
+        states["d38"] = DeviceState(values: ["2.1": .bool(false), "3.1": .int(94)], spec: smoke, legacy: false, source: "cloud")
         let humidifier = DeviceSpec(type: "", description: "", services: [S(2, "humidifier", [
             P(2, 1, "on", "bool"), P(2, 2, "target-humidity", "uint8", range: [30, 80, 5], unit: "percentage"),
             P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Manual")]),
@@ -246,6 +263,8 @@ struct ArtGallery: View {
             ("wall-switch", AnyView(WallSwitchArt(on: true, tint: .green)), AnyView(WallSwitchArt(on: false, tint: .green))),
             ("hood", AnyView(HoodArt(on: true, tint: DeviceCategory.hood.color)), AnyView(HoodArt(on: false, tint: DeviceCategory.hood.color))),
             ("lock", AnyView(LockArt(locked: true, tint: DeviceCategory.lock.color)), AnyView(LockArt(locked: false, tint: DeviceCategory.lock.color))),
+            ("airer", AnyView(AirerArt(lowered: true, lightOn: true, tint: DeviceCategory.airer.color)), AnyView(AirerArt(lowered: false, lightOn: false, tint: DeviceCategory.airer.color))),
+            ("clock", AnyView(ClockArt(on: true, tint: DeviceCategory.clock.color)), AnyView(ClockArt(on: false, tint: DeviceCategory.clock.color))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -270,6 +289,7 @@ struct ArtGallery: View {
             ("motion", AnyView(MotionSensorArt(on: true, tint: .mint)), AnyView(MotionSensorArt(on: false, tint: .mint))),
             ("contact", AnyView(ContactSensorArt(on: true, open: true, tint: .mint)), AnyView(ContactSensorArt(on: false, open: nil, tint: .mint))),
             ("leak", AnyView(LeakSensorArt(on: true, wet: true, tint: .mint)), AnyView(LeakSensorArt(on: false, wet: nil, tint: .mint))),
+            ("smoke", AnyView(SmokeArt(on: true, alarm: false, tint: .mint)), AnyView(SmokeArt(on: true, alarm: true, tint: .mint))),
             ("doorbell", AnyView(DoorbellArt(on: true, tint: .purple)), AnyView(DoorbellArt(on: false, tint: .purple))),
             ("air-purifier", AnyView(AirPurifierArt(on: true, level: 0.6, tint: .cyan)), AnyView(AirPurifierArt(on: false, level: 0.6, tint: .cyan))),
             ("generic", AnyView(GenericArt(on: true, tint: .indigo)), AnyView(GenericArt(on: false, tint: .indigo))),
@@ -454,6 +474,16 @@ enum Snapshot {
             m.page = .detail("d35"); render(root, f("lock"))
             m.states["d35"]?.values["2.1"] = .bool(false); render(root, f("lock-idle"))
             m.states["d35"]?.values["2.1"] = .bool(true)
+            m.page = .detail("d36"); render(root, f("airer"))
+            m.states["d36"]?.values["3.1"] = .bool(false); m.states["d36"]?.values["2.1"] = .int(0); m.states["d36"]?.values["2.2"] = .int(0)
+            render(root, f("airer-idle"))
+            m.states["d36"]?.values["3.1"] = .bool(true); m.states["d36"]?.values["2.1"] = .int(100); m.states["d36"]?.values["2.2"] = .int(100)
+            m.page = .detail("d37"); render(root, f("clock"))
+            m.states["d37"]?.values["2.1"] = .bool(false); render(root, f("clock-idle"))
+            m.states["d37"]?.values["2.1"] = .bool(true)
+            m.page = .detail("d38"); render(root, f("smoke"))
+            m.states["d38"]?.values["2.1"] = .bool(true); render(root, f("smoke-alarm"))
+            m.states["d38"]?.values["2.1"] = .bool(false)
             m.states["d34"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))

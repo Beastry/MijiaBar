@@ -290,6 +290,65 @@ struct HoodArt: View {
     }
 }
 
+struct AirerArt: View {
+    let lowered: Bool, lightOn: Bool, tint: Color
+    var body: some View {
+        let rackY: CGFloat = lowered ? 38 : -25
+        let midY: CGFloat = (102 + rackY) / 2
+        ZStack {
+            Ambient(tint, lightOn ? 0.4 : 0, width: 200, height: 120)
+            RoundedRectangle(cornerRadius: 3).fill(aluminum).frame(width: 204, height: 4).offset(y: -59)
+            RoundedRectangle(cornerRadius: 7).appliance(tint, lightOn ? 0.3 : 0)
+                .frame(width: 166, height: 22).offset(y: -46)
+            Capsule().fill(lightOn ? Color.yellow : Color(white: 0.55))
+                .frame(width: 112, height: 4).offset(y: -35)
+            ForEach([-65.0, 65.0], id: \.self) { position in
+                Path { path in
+                    path.move(to: CGPoint(x: 120 + position, y: 34))
+                    path.addLine(to: CGPoint(x: 120 + position - 7, y: midY))
+                    path.addLine(to: CGPoint(x: 120 + position, y: 68 + rackY))
+                    path.move(to: CGPoint(x: 120 + position - 7, y: 34))
+                    path.addLine(to: CGPoint(x: 120 + position, y: midY))
+                    path.addLine(to: CGPoint(x: 120 + position - 7, y: 68 + rackY))
+                }.stroke(Color(white: 0.6), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            }
+            ForEach([-9.0, 9.0], id: \.self) { offset in
+                Capsule().fill(aluminum).frame(width: 212, height: 5).offset(y: rackY + offset)
+            }
+            ForEach([-82.0, 82.0], id: \.self) { position in
+                RoundedRectangle(cornerRadius: 2).fill(tint.opacity(0.8))
+                    .frame(width: 5, height: 23).offset(x: position, y: rackY)
+            }
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
+struct ClockArt: View {
+    let on: Bool, tint: Color
+    var body: some View {
+        ZStack {
+            Ambient(tint, on ? 0.45 : 0, width: 200, height: 120)
+            RoundedRectangle(cornerRadius: 5).fill(aluminum).frame(width: 38, height: 20).offset(y: 42)
+            Capsule().fill(aluminum).frame(width: 88, height: 7).offset(y: 53)
+            RoundedRectangle(cornerRadius: 22).appliance(tint, on ? 0.25 : 0)
+                .frame(width: 172, height: 94).offset(y: -4)
+            RoundedRectangle(cornerRadius: 17).fill(darkGlass)
+                .overlay(RoundedRectangle(cornerRadius: 17).stroke(Theme.stroke, lineWidth: 1))
+                .frame(width: 154, height: 76).offset(y: -4)
+            Ellipse().fill(RadialGradient(colors: [tint.opacity(on ? 0.22 : 0), .clear], center: .center, startRadius: 0, endRadius: 66))
+                .frame(width: 144, height: 62).offset(y: -4)
+            Text(verbatim: "07:30").font(.system(size: 39, weight: .light, design: .monospaced))
+                .foregroundStyle(on ? tint : Color(white: 0.26)).offset(y: -6)
+            Capsule().fill(on ? tint.opacity(0.8) : Color(white: 0.3))
+                .frame(width: 46, height: 2).offset(y: 26)
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 struct LockArt: View {
     let locked: Bool, tint: Color
     var body: some View {
@@ -1350,6 +1409,42 @@ struct LeakSensorArt: View {
             .frame(width: 160, height: 136)
             .animation(Motion.smooth, value: wet)
         }
+    }
+}
+
+struct SmokeArt: View {
+    let on: Bool, alarm: Bool?, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        PowerTimeline(on: on) { _, k in
+            let status = alarm == true ? Color.orange : tint
+            let level = alarm == nil ? 0 : k
+            ZStack {
+                Ambient(status, level * (alarm == true ? 0.8 : 0.3), width: 160, height: 124).position(x: 80, y: 68)
+                Ellipse().fill(LinearGradient(colors: [Color(white: 0.82), Color(white: 0.64)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 120, height: 94).position(x: 80, y: 73)
+                    .shadow(color: .black.opacity(0.18), radius: 5, y: 4)
+                Ellipse().appliance(status, level * 0.4).frame(width: 120, height: 94).position(x: 80, y: 65)
+                Ellipse().fill(shellFill).overlay(Ellipse().stroke(Color.black.opacity(0.08), lineWidth: 0.75))
+                    .frame(width: 102, height: 78).position(x: 80, y: 65)
+                ForEach(0..<28, id: \.self) { index in
+                    let angle: CGFloat = CGFloat(index) * .pi * 2 / 28
+                    Capsule().fill(Color(white: 0.48))
+                        .overlay(Capsule().stroke(Color.white.opacity(0.6), lineWidth: 0.5))
+                        .frame(width: 3, height: 12)
+                        .rotationEffect(.radians(Double(angle)))
+                        .position(x: 80 + sin(angle) * 43, y: 65 - cos(angle) * 31)
+                }
+                Ellipse().fill(shellFill).overlay(Ellipse().stroke(Color.white.opacity(0.8), lineWidth: 1))
+                    .frame(width: 56, height: 40).position(x: 80, y: 65)
+                Circle().fill(Color(white: 0.58)).frame(width: 5, height: 5).position(x: 80, y: 65)
+                Circle().fill(status).frame(width: 5, height: 5).opacity(level).position(x: 80, y: 65)
+                Glow(status, level * 0.9, diameter: 5, softness: alarm == true ? 12 : 4).position(x: 80, y: 65)
+            }
+            .frame(width: 160, height: 136)
+            .animation(reduceMotion ? nil : Motion.smooth, value: alarm)
+        }
+        .accessibilityHidden(true)
     }
 }
 

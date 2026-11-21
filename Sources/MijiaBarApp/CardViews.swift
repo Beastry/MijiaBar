@@ -71,7 +71,7 @@ struct CardModel {
         .heater: ["target-temperature", "heat-level", "temperature"],
         .dehumidifier: ["target-humidity", "relative-humidity"],
         .plug: ["electric-power", "power-consumption", "temperature"],
-        .sensor: ["temperature", "relative-humidity", "illumination", "battery-level"],
+        .sensor: ["temperature", "relative-humidity", "illumination", "smoke-detection", "battery-level"],
         .speaker: ["volume"], .tv: ["volume"],
         .airPurifier: ["pm2.5-density", "air-quality-index", "fan-level"],
     ]
@@ -263,6 +263,8 @@ func zhCategory(_ c: DeviceCategory) -> String {
     case .kitchen: return L("厨房电器", "Kitchen")
     case .hood: return L("油烟机", "Range hood")
     case .lock: return L("门锁", "Door lock")
+    case .airer: return L("晾衣架", "Clothes airer")
+    case .clock: return L("闹钟", "Clock")
     case .printer: return L("打印机", "Printer")
     case .purifier: return L("净水器", "Water purifier")
     case .other: return L("设备", "Device")

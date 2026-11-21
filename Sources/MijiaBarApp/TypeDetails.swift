@@ -12,6 +12,8 @@ struct TypeDetailView: View {
         case .fan: FanDetail(dc: dc)
         case .hood: HoodDetail(dc: dc)
         case .lock: LockDetail(dc: dc)
+        case .airer: AirerDetail(dc: dc)
+        case .clock: ClockDetail(dc: dc)
         case .humidifier: HumidifierDetail(dc: dc)
         case .vacuum: VacuumDetail(dc: dc)
         case .fridge: FridgeDetail(dc: dc)
@@ -88,6 +90,8 @@ struct DeviceStatusCard: View {
     switch d.category {
     case .hood: HoodArt(on: false, tint: tint)
     case .lock: LockArt(locked: false, tint: tint)
+    case .airer: AirerArt(lowered: false, lightOn: false, tint: tint)
+    case .clock: ClockArt(on: false, tint: tint)
     case .ac: ACIllustration(on: false, tint: tint)
     case .fan: FanArt(on: false, level: 0.5, swing: false, tint: tint)
     case .light: BulbArt(on: false, brightness: 0.7, kelvin: nil)
@@ -115,6 +119,7 @@ struct DeviceStatusCard: View {
         case .motion: MotionSensorArt(on: false, tint: tint)
         case .contact: ContactSensorArt(on: false, open: nil, tint: tint)
         case .leak: LeakSensorArt(on: false, wet: nil, tint: tint)
+        case .smoke: SmokeArt(on: false, alarm: nil, tint: tint)
         default: ThermoArt(temp: nil, tint: tint)
         }
     case .fridge: FridgeArt(on: false, tint: tint)
@@ -260,6 +265,55 @@ struct LockDetail: View {
                 PropTile(dc: dc, prop: dc.p("door-state"), title: L("门状态", "Door state"), icon: "door.left.hand.closed", tint: tint)
                 PropTile(dc: dc, prop: dc.p("battery-level"), title: L("电量", "Battery"), icon: "battery.75percent", tint: tint)
                 PropTile(dc: dc, prop: lockProperty, title: L("门锁", "Door lock"), icon: "lock.fill", tint: tint)
+            }
+        }
+    }
+}
+
+struct AirerDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var light: SpecProperty? { dc.p("on", in: "light") ?? dc.p("on") }
+    var power: SpecProperty? { light.flatMap { $0.writable && $0.format == "bool" ? $0 : nil } ?? dc.spec?.mainOnProperty }
+    var position: SpecProperty? { dc.p("current-position") ?? dc.p("target-position") }
+    var lowered: Bool { (dc.num(position) ?? 0) > 0 }
+    var on: Bool { dc.bool(power) ?? lowered }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on,
+                  title: power != nil ? (on ? L("已开启", "On") : L("已关闭", "Off")) : (lowered ? L("已降下", "Lowered") : L("已升起", "Raised")),
+                  subtitle: L("晾衣架", "Clothes airer"), powerOn: dc.bool(power),
+                  onPower: power.map { prop in { m.write(device, prop.key, .bool(!on)) } }) {
+            AirerArt(lowered: lowered, lightOn: dc.bool(light) ?? false, tint: tint)
+        } content: {
+            if let target = primarySliderProp(dc) { PropSlider(dc: dc, prop: target, colors: [.gray, tint], enabled: true) }
+            HStack(spacing: 8) {
+                if let light { PropTile(dc: dc, prop: light, title: L("照明", "Light"), icon: "lightbulb", tint: tint) }
+                if let position { PropTile(dc: dc, prop: position, title: L("当前位置", "Position"), icon: "arrow.up.and.down", tint: tint) }
+                if let drying = dc.p("drying") { PropTile(dc: dc, prop: drying, title: L("烘干", "Drying"), icon: "wind", tint: tint) }
+            }
+        }
+    }
+}
+
+struct ClockDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var light: SpecProperty? { dc.p("on", in: "light") ?? dc.p("on") ?? dc.spec?.mainOnProperty }
+    var power: SpecProperty? { light.flatMap { $0.writable && $0.format == "bool" ? $0 : nil } }
+    var on: Bool { dc.bool(light) ?? false }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on, title: on ? L("已开启", "On") : L("已关闭", "Off"),
+                  subtitle: L("闹钟", "Clock"), powerOn: dc.bool(light),
+                  onPower: power.map { prop in { m.write(device, prop.key, .bool(!on)) } }) {
+            ClockArt(on: on, tint: tint)
+        } content: {
+            if let brightness = primarySliderProp(dc) { PropSlider(dc: dc, prop: brightness, colors: [.gray, tint], enabled: on) }
+            HStack(spacing: 8) {
+                if let brightness = dc.p("brightness") { PropTile(dc: dc, prop: brightness, title: L("亮度", "Brightness"), icon: "sun.max", tint: tint) }
+                if let alarm = dc.p("on", in: "alarm") { PropTile(dc: dc, prop: alarm, title: L("闹钟", "Alarm"), icon: "alarm", tint: tint) }
+                if let battery = dc.p("battery-level") { PropTile(dc: dc, prop: battery, title: L("电量", "Battery"), icon: "battery.75percent", tint: tint) }
             }
         }
     }
@@ -876,6 +930,7 @@ struct SensorDetail: View {
         let t = dc.num(dc.p("temperature")), h = dc.num(dc.p("relative-humidity"))
         if dc.p("contact-state") != nil || d.form == .contact { ContactSensorDetail(dc: dc) }
         else if dc.p("submersion-state") != nil || d.form == .leak { LeakSensorDetail(dc: dc) }
+        else if dc.p("smoke-detection") != nil || d.form == .smoke { SmokeSensorDetail(dc: dc) }
         else if dc.p("temperature") == nil { MotionSensorDetail(dc: dc) } else {
         TypeShell(device: d, tint: tint, isOn: d.isOnline, title: d.isOnline ? L("在线", "Online") : L("离线", "Offline"), subtitle: L("传感器", "Sensor")) {
             ThermoArt(temp: t, tint: tint)
@@ -941,6 +996,22 @@ struct LeakSensorDetail: View {
         } content: {
             ReadoutRow(items: [("battery.75percent", dc.num(dc.p("battery-level")).map { L("电量 ", "Battery ") + "\(Int($0))%" })], tint: tint)
             SensorHistoryCard(device: d, metric: "leak", title: L("浸水记录", "Leak history"), style: .state(on: L("检测到浸水", "Water detected"), off: L("恢复正常", "Dry again")), tint: .orange)
+        }
+    }
+}
+
+struct SmokeSensorDetail: View {
+    let dc: DC
+    var body: some View {
+        let d = dc.device
+        let alarm = dc.bool(dc.p("smoke-detection"))
+        let tint = alarm == true ? Color.orange : Color.mint
+        let title = !d.isOnline ? L("离线", "Offline") : alarm.map { $0 ? L("检测到烟雾", "Smoke detected") : L("无烟雾", "No smoke") } ?? L("在线", "Online")
+        TypeShell(device: d, tint: tint, isOn: d.isOnline, title: title, subtitle: L("烟雾传感器", "Smoke sensor")) {
+            SmokeArt(on: d.isOnline, alarm: alarm, tint: tint)
+        } content: {
+            ReadoutRow(items: [("battery.75percent", dc.num(dc.p("battery-level")).map { L("电量 ", "Battery ") + "\(Int($0))%" })], tint: tint)
+            SensorHistoryCard(device: d, metric: "smoke", title: L("烟雾记录", "Smoke history"), style: .state(on: L("检测到烟雾", "Smoke detected"), off: L("恢复正常", "Clear again")), tint: .orange)
         }
     }
 }

@@ -8,15 +8,163 @@ import MijiaCore
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
-                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"),
+                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"),
                                 (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 33)
+        #expect(ArtGallery.rows.count == 36)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func clockDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d37" })
+        #expect(device.category == .clock && device.category.rawValue == "clock")
+        #expect(device.model == "yeelink.clock.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("主卧", "Bedroom"))
+        #expect(device.name == L("闹钟", "Clock") && device.icon == "deskclock")
+        #expect(device.category.color == Color(red: 0.95, green: 0.70, blue: 0.25))
+        #expect(zhCategory(device.category) == L("闹钟", "Clock"))
+        #expect(HouseCatalog.deviceClass(category: .clock) == .badge)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.spec?.type == "urn:miot-spec-v2:device:clock:0")
+        let light = try #require(context.p("on", in: "light"))
+        let brightness = try #require(context.p("brightness", in: "light"))
+        let alarm = try #require(context.p("on", in: "alarm"))
+        let battery = try #require(context.p("battery-level", in: "battery"))
+        #expect(light.writable && light.format == "bool" && context.bool(light) == true)
+        #expect(model.powerInfo(device)?.key == light.key)
+        #expect(brightness.writable && brightness.format == "uint8" && brightness.range == [1, 100, 1])
+        #expect(context.num(brightness) == 80 && primarySliderProp(context)?.key == brightness.key)
+        #expect(alarm.writable && alarm.format == "bool" && context.bool(alarm) == true)
+        #expect(battery.readable && !battery.writable && battery.range == [0, 100, 1] && battery.unit == "percentage")
+        #expect(context.num(battery) == 90)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> ClockArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        func checkShell(_ shell: some View, on: Bool, hasPower: Bool) throws {
+            let fields = Mirror(reflecting: shell).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> ClockArt)
+            let handler = try #require(fields.first { $0.label == "onPower" }?.value)
+            #expect(fields.first { $0.label == "isOn" }?.value as? Bool == on)
+            #expect(art().on == on)
+            #expect(!Mirror(reflecting: handler).children.isEmpty == hasPower)
+            #expect(fields.first { $0.label == "subtitle" }?.value as? String == L("闹钟", "Clock"))
+            #expect(fields.first { $0.label == "title" }?.value as? String == (on ? L("已开启", "On") : L("已关闭", "Off")))
+        }
+        for on in [true, false] {
+            state.values[light.key] = .bool(on)
+            let detail = ClockDetail(dc: DC(device: device, state: state))
+            #expect(detail.light?.key == light.key && detail.power?.key == light.key && detail.on == on)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: ClockDetail.self))
+            #expect(contains(detail.body, type: ClockArt.self))
+            #expect(!contains(routed, type: DeviceCardView.self) && !contains(detail.body, type: GenericArt.self))
+            try checkShell(detail.body, on: on, hasPower: true)
+        }
+        let idle = offArt(device, tint: device.category.color)
+        #expect(contains(idle, type: ClockArt.self) && !contains(idle, type: GenericArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "clock" })
+        #expect(contains(gallery.1, type: ClockArt.self) && contains(gallery.2, type: ClockArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-clock-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-clock-" + suffix, "png") != nil)
+        }
+        state.spec = nil
+        let absent = ClockDetail(dc: DC(device: device, state: state))
+        #expect(absent.light == nil && absent.power == nil && primarySliderProp(absent.dc) == nil)
+        try checkShell(absent.body, on: false, hasPower: false)
+        for access in [["read"], ["read", "write"]] {
+            let spec = DeviceSpec.parse(["services": [["iid": 2, "type": "light", "properties": [
+                ["iid": 1, "type": "on", "format": "bool", "access": access],
+                ["iid": 2, "type": "brightness", "format": "uint8", "access": access, "value-range": [1, 100, 1]]
+            ]]]])
+            let detail = ClockDetail(dc: DC(device: device, state: DeviceState(values: ["2.1": .bool(true)], spec: spec, legacy: false, source: "cloud")))
+            #expect((primarySliderProp(detail.dc) != nil) == access.contains("write"))
+            try checkShell(detail.body, on: true, hasPower: access.contains("write"))
+        }
+    }
+
+    @Test func airerDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d36" })
+        #expect(device.category == .airer && device.category.rawValue == "airer")
+        #expect(device.model == "hyd.airer.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("阳台", "Balcony"))
+        #expect(device.name == L("晾衣架", "Clothes airer") && device.icon == "hanger")
+        #expect(device.category.color == Color.mint)
+        #expect(zhCategory(device.category) == L("晾衣架", "Clothes airer"))
+        #expect(HouseCatalog.deviceClass(category: .airer) == .badge)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        let light = try #require(context.p("on", in: "light"))
+        let position = try #require(context.p("current-position"))
+        let target = try #require(primarySliderProp(context))
+        let drying = try #require(context.p("drying"))
+        #expect(light.writable && light.format == "bool" && context.bool(light) == true)
+        #expect(model.powerInfo(device)?.key == light.key)
+        #expect(!position.writable && position.range == [0, 100, 1] && context.num(position) == 100)
+        #expect(target.name == "target-position" && target.writable && target.range == [0, 100, 1])
+        #expect(context.num(target) == 100 && context.bool(drying) == false)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> AirerArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        func checkShell(_ shell: some View, on: Bool, lowered: Bool, hasPower: Bool) throws {
+            let fields = Mirror(reflecting: shell).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> AirerArt)
+            let handler = try #require(fields.first { $0.label == "onPower" }?.value)
+            #expect(fields.first { $0.label == "isOn" }?.value as? Bool == on)
+            #expect(art().lowered == lowered && art().lightOn == (hasPower && on))
+            #expect(!Mirror(reflecting: handler).children.isEmpty == hasPower)
+            #expect(fields.first { $0.label == "subtitle" }?.value as? String == L("晾衣架", "Clothes airer"))
+            #expect(fields.first { $0.label == "title" }?.value as? String == (hasPower ? (on ? L("已开启", "On") : L("已关闭", "Off")) : (lowered ? L("已降下", "Lowered") : L("已升起", "Raised"))))
+        }
+        for active in [true, false] {
+            state.values[light.key] = .bool(active)
+            state.values[position.key] = .int(active ? 100 : 0)
+            state.values[target.key] = .int(active ? 100 : 0)
+            let detail = AirerDetail(dc: DC(device: device, state: state))
+            #expect(detail.on == active && detail.lowered == active && detail.power == light)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: AirerDetail.self))
+            #expect(contains(detail.body, type: AirerArt.self))
+            #expect(!contains(routed, type: DeviceCardView.self))
+            #expect(!contains(detail.body, type: GenericArt.self))
+            #expect(!contains(detail.body, type: WasherArt.self))
+            #expect(!contains(detail.body, type: WaterHeaterArt.self))
+            try checkShell(detail.body, on: active, lowered: active, hasPower: true)
+        }
+        state.values[position.key] = .int(100)
+        let unlit = AirerDetail(dc: DC(device: device, state: state))
+        try checkShell(unlit.body, on: false, lowered: true, hasPower: true)
+        for access in [["read"], ["read", "write"]] {
+            let targetProperty = SpecProperty(siid: target.siid, iid: target.iid, type: target.type, description: target.description,
+                                              format: target.format, access: access, unit: target.unit, range: target.range, options: target.options)
+            state.spec = DeviceSpec(type: "", description: "", services: [
+                SpecService(iid: 2, type: "urn:miot-spec-v2:service:airer:0", description: "", properties: [position, targetProperty], actions: [])])
+            let noLight = DC(device: device, state: state)
+            #expect((primarySliderProp(noLight) != nil) == access.contains("write"))
+            try checkShell(AirerDetail(dc: noLight).body, on: true, lowered: true, hasPower: false)
+        }
+        state.spec = nil
+        let absent = AirerDetail(dc: DC(device: device, state: state))
+        #expect(absent.light == nil && absent.position == nil && primarySliderProp(absent.dc) == nil)
+        try checkShell(absent.body, on: false, lowered: false, hasPower: false)
+        let idle = offArt(device, tint: device.category.color)
+        #expect(contains(idle, type: AirerArt.self) && !contains(idle, type: GenericArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "airer" })
+        #expect(contains(gallery.1, type: AirerArt.self) && contains(gallery.2, type: AirerArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-airer-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-airer-" + suffix, "png") != nil)
+        }
+        #expect(model.devices.first { $0.did == "d18" }?.category == .washer)
     }
 
     @Test func lockDemoRoutingAndProps() throws {
@@ -290,6 +438,73 @@ import MijiaCore
         #expect(contains(TypeDetailView(device: device, state: state).body, type: SensorDetail.self))
         #expect(!contains(TypeDetailView(device: device, state: state).body, type: DeviceCardView.self))
         #expect(contains(SensorDetail(dc: context).body, type: LeakSensorDetail.self))
+    }
+
+    @Test func smokeDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d38" })
+        #expect(device.category == .sensor && device.form == .smoke)
+        #expect(device.model == "lumi.sensor_smoke.demo" && device.icon == "smoke")
+        #expect(device.homeId == "h2" && device.roomName == L("厨房", "Kitchen"))
+        #expect(device.name == L("烟雾传感器", "Smoke sensor") && device.isOnline)
+        #expect(device.category.color == Color.mint)
+        #expect(zhCategory(device.category) == L("传感器", "Sensor"))
+        #expect(HouseCatalog.deviceClass(category: .sensor) == .badge)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.spec?.type == "urn:miot-spec-v2:device:smoke-sensor:0")
+        let smoke = try #require(context.p("smoke-detection", in: "smoke-sensor"))
+        let battery = try #require(context.p("battery-level", in: "battery"))
+        #expect(smoke.readable && !smoke.writable && smoke.format == "bool" && smoke.access.contains("notify"))
+        #expect(context.bool(smoke) == false)
+        #expect(battery.readable && !battery.writable && battery.range == [0, 100, 1] && battery.unit == "percentage")
+        #expect(context.num(battery) == 94)
+        #expect(CardModel.primaryNames[.sensor]?.contains("smoke-detection") == true)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> SmokeArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        let routed = TypeDetailView(device: device, state: state).body
+        #expect(contains(routed, type: SensorDetail.self) && !contains(routed, type: DeviceCardView.self))
+        for online in [true, false] {
+            for alarm: Bool? in [false, true, nil] {
+                var changedDevice = device, changedState = state
+                changedDevice.isOnline = online
+                changedState.values[smoke.key] = alarm.map { .bool($0) }
+                let changedContext = DC(device: changedDevice, state: changedState)
+                let sensor = SensorDetail(dc: changedContext).body
+                #expect(contains(sensor, type: SmokeSensorDetail.self))
+                #expect(!contains(sensor, type: MotionSensorDetail.self))
+                let shell = SmokeSensorDetail(dc: changedContext).body
+                let fields = Mirror(reflecting: shell).children
+                let art = try #require(fields.first { $0.label == "art" }?.value as? () -> SmokeArt)
+                #expect(art().on == online && art().alarm == alarm)
+                #expect(art().tint == (alarm == true ? Color.orange : Color.mint))
+                #expect(fields.first { $0.label == "title" }?.value as? String == (!online ? L("离线", "Offline") : alarm.map { $0 ? L("检测到烟雾", "Smoke detected") : L("无烟雾", "No smoke") } ?? L("在线", "Online")))
+                #expect(fields.first { $0.label == "subtitle" }?.value as? String == L("烟雾传感器", "Smoke sensor"))
+                #expect(contains(shell, type: SmokeArt.self))
+                #expect(!contains(shell, type: MotionSensorArt.self) && !contains(shell, type: ThermoArt.self) && !contains(shell, type: GenericArt.self))
+            }
+        }
+        let idle = offArt(device, tint: .mint)
+        #expect(contains(idle, type: SmokeArt.self) && !contains(idle, type: ThermoArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "smoke" })
+        #expect(contains(gallery.1, type: SmokeArt.self) && contains(gallery.2, type: SmokeArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-sensor-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-sensor-" + suffix, "png") != nil)
+        }
+        for name in ["lumi.sensor_smoke.v1", "jiaoyan.smoke.t1", "LUMI.SENSOR_SMOKE.DEMO", "lumi.sensor_smoke_magnet_flood_motion.demo"] {
+            var variant = device
+            variant.model = name
+            #expect(variant.category == .sensor && variant.form == .smoke && variant.icon == "smoke")
+            let missing = DeviceState(values: [:], spec: nil, legacy: false, source: "cloud")
+            #expect(contains(SensorDetail(dc: DC(device: variant, state: missing)).body, type: SmokeSensorDetail.self))
+        }
+        var generic = device
+        generic.model = "vendor.sensor.demo"
+        #expect(generic.form == nil)
+        #expect(contains(SensorDetail(dc: DC(device: generic, state: state)).body, type: SmokeSensorDetail.self))
     }
 
     @Test func motionDemoRoutingAndProps() throws {

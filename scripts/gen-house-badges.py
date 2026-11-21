@@ -170,6 +170,32 @@ kkkkkkkkkkkk
 ...kddddk...
 ...kkkkkk...
 ............""",
+    "airer": """
+.kkkkkkkkkk.
+.kssssssssk.
+.kkyyyyyykk.
+..d......d..
+...d....d...
+..d......d..
+...d....d...
+..d......d..
+kkkkkkkkkkkk
+.c........c.
+kkkkkkkkkkkk
+............""",
+    "clock": """
+............
+............
+..kkkkkkkk..
+.kssssssssk.
+.kskkkkkksk.
+.kskyykyksk.
+.kskykyyksk.
+.kskkkkkksk.
+.kssssssssk.
+..kkkkkkkk..
+....kssk....
+...kkkkkk...""",
     "lock": """
 ....kkkk....
 ....kssk....

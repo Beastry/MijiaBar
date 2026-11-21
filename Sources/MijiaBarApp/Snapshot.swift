@@ -53,6 +53,7 @@ extension AppModel {
             dev("d36", L("晾衣架", "Clothes airer"), "hyd.airer.demo", L("阳台", "Balcony"), home: "h2"),
             dev("d37", L("闹钟", "Clock"), "yeelink.clock.demo", L("主卧", "Bedroom"), home: "h2"),
             dev("d38", L("烟雾传感器", "Smoke sensor"), "lumi.sensor_smoke.demo", L("厨房", "Kitchen"), home: "h2"),
+            dev("d39", L("燃气传感器", "Gas sensor"), "lumi.sensor_natgas.demo", L("厨房", "Kitchen"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -80,6 +81,7 @@ extension AppModel {
         Recorder.shared.seed("d6", "temperature", Self.demoWave(25.6, 2.2)); Recorder.shared.seed("d6", "humidity", Self.demoWave(58, 6))
         Recorder.shared.seed("d12", "contact", Self.demoToggles()); Recorder.shared.seed("d13", "leak", Self.demoToggles(start: 0))
         Recorder.shared.seed("d38", "smoke", Self.demoToggles(start: 0))
+        Recorder.shared.seed("d39", "gas", Self.demoToggles(start: 0))
         Recorder.shared.seed("d26", "illumination", Self.demoWave(320, 120))
         states["d5"] = DeviceState(values: ["2.1": .bool(true), "11.2": .double(36.5)], spec: plug, legacy: false, source: "cloud")
         let wallSwitch = DeviceSpec(type: "", description: "", services: [S(2, "switch", [
@@ -128,6 +130,10 @@ extension AppModel {
         states["d13"] = DeviceState(values: ["2.1": .bool(true), "3.1": .int(91)], spec: flood, legacy: false, source: "cloud")
         let smoke = DeviceSpec(type: "urn:miot-spec-v2:device:smoke-sensor:0", description: "Smoke sensor", services: [S(2, "smoke-sensor", [P(2, 1, "smoke-detection", "bool", ["read", "notify"])]), battery])
         states["d38"] = DeviceState(values: ["2.1": .bool(false), "3.1": .int(94)], spec: smoke, legacy: false, source: "cloud")
+        let gas = DeviceSpec(type: "urn:miot-spec-v2:device:gas-sensor:0", description: "Gas sensor", services: [
+            S(2, "gas-sensor", [P(2, 1, "gas-leakage", "bool", ["read", "notify"]),
+                              P(2, 2, "gas-concentration", "float", ["read", "notify"], range: [0, 100, 1], unit: "percentage")]), battery])
+        states["d39"] = DeviceState(values: ["2.1": .bool(false), "2.2": .double(1), "3.1": .int(96)], spec: gas, legacy: false, source: "cloud")
         let humidifier = DeviceSpec(type: "", description: "", services: [S(2, "humidifier", [
             P(2, 1, "on", "bool"), P(2, 2, "target-humidity", "uint8", range: [30, 80, 5], unit: "percentage"),
             P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Manual")]),
@@ -290,6 +296,7 @@ struct ArtGallery: View {
             ("contact", AnyView(ContactSensorArt(on: true, open: true, tint: .mint)), AnyView(ContactSensorArt(on: false, open: nil, tint: .mint))),
             ("leak", AnyView(LeakSensorArt(on: true, wet: true, tint: .mint)), AnyView(LeakSensorArt(on: false, wet: nil, tint: .mint))),
             ("smoke", AnyView(SmokeArt(on: true, alarm: false, tint: .mint)), AnyView(SmokeArt(on: true, alarm: true, tint: .mint))),
+            ("gas", AnyView(GasArt(on: true, alarm: false, tint: .mint)), AnyView(GasArt(on: true, alarm: true, tint: .mint))),
             ("doorbell", AnyView(DoorbellArt(on: true, tint: .purple)), AnyView(DoorbellArt(on: false, tint: .purple))),
             ("air-purifier", AnyView(AirPurifierArt(on: true, level: 0.6, tint: .cyan)), AnyView(AirPurifierArt(on: false, level: 0.6, tint: .cyan))),
             ("generic", AnyView(GenericArt(on: true, tint: .indigo)), AnyView(GenericArt(on: false, tint: .indigo))),
@@ -484,6 +491,9 @@ enum Snapshot {
             m.page = .detail("d38"); render(root, f("smoke"))
             m.states["d38"]?.values["2.1"] = .bool(true); render(root, f("smoke-alarm"))
             m.states["d38"]?.values["2.1"] = .bool(false)
+            m.page = .detail("d39"); render(root, f("gas"))
+            m.states["d39"]?.values["2.1"] = .bool(true); render(root, f("gas-alarm"))
+            m.states["d39"]?.values["2.1"] = .bool(false)
             m.states["d34"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))

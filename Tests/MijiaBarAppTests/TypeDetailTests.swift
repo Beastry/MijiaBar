@@ -15,7 +15,7 @@ import MijiaCore
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 36)
+        #expect(ArtGallery.rows.count == 37)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
     }
 
@@ -505,6 +505,144 @@ import MijiaCore
         generic.model = "vendor.sensor.demo"
         #expect(generic.form == nil)
         #expect(contains(SensorDetail(dc: DC(device: generic, state: state)).body, type: SmokeSensorDetail.self))
+    }
+
+    @Test func gasDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d39" })
+        #expect(device.category == .sensor && device.form == .gas)
+        #expect(device.model == "lumi.sensor_natgas.demo" && device.icon == "flame")
+        #expect(device.homeId == "h2" && device.roomName == L("厨房", "Kitchen"))
+        #expect(device.name == L("燃气传感器", "Gas sensor") && device.isOnline)
+        #expect(device.category.color == Color.mint)
+        #expect(zhCategory(device.category) == L("传感器", "Sensor"))
+        #expect(HouseCatalog.deviceClass(category: device.category) == .badge)
+        let state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.spec?.type == "urn:miot-spec-v2:device:gas-sensor:0")
+        let leakage = try #require(context.p("gas-leakage", in: "gas-sensor"))
+        let concentration = try #require(context.p("gas-concentration", in: "gas-sensor"))
+        let battery = try #require(context.p("battery-level", in: "battery"))
+        #expect(leakage.readable && !leakage.writable && leakage.format == "bool" && leakage.access.contains("notify"))
+        #expect(concentration.readable && !concentration.writable && concentration.format == "float" && concentration.access.contains("notify"))
+        #expect(concentration.range == [0, 100, 1] && concentration.unit == "percentage")
+        #expect(battery.readable && !battery.writable && battery.range == [0, 100, 1] && battery.unit == "percentage")
+        #expect(context.bool(leakage) == false && context.num(concentration) == 1 && context.num(battery) == 96)
+        #expect(!Recorder.shared.series(device.did, "gas").samples.isEmpty)
+        #expect(CardModel.primaryNames[.sensor]?.contains("gas-leakage") == true)
+        #expect(CardModel.primaryNames[.sensor]?.contains("gas-concentration") == true)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> GasArt { return contains(art(), type: type) }
+            if let content = value as? () -> TupleView<(BigValue?, ReadoutRow, SensorHistoryCard)> { return contains(content(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        let detail = GasSensorDetail(dc: context).body
+        let shell = try #require(detail as? TypeShell<GasArt, TupleView<(BigValue?, ReadoutRow, SensorHistoryCard)>>)
+        #expect(shell.content().value.0?.unit == "%")
+        #expect(contains(detail, type: BigValue.self))
+        let lel = SpecProperty(siid: 2, iid: 2, type: concentration.type, description: concentration.description, format: "float", access: ["read", "notify"], unit: nil, range: [0, 100, 1], options: nil)
+        var lelState = state
+        lelState.spec = DeviceSpec(type: "gas-sensor", description: "", services: [SpecService(iid: 2, type: "gas-sensor", description: "", properties: [lel], actions: [])])
+        let lelShell = try #require(GasSensorDetail(dc: DC(device: device, state: lelState)).body as? TypeShell<GasArt, TupleView<(BigValue?, ReadoutRow, SensorHistoryCard)>>)
+        #expect(lelShell.content().value.0?.unit == "%LEL")
+        let routed = TypeDetailView(device: device, state: state).body
+        #expect(contains(routed, type: SensorDetail.self) && !contains(routed, type: DeviceCardView.self))
+        for online in [true, false] {
+            for alarm: Bool? in [false, true, nil] {
+                var changed = device, changedState = state
+                changed.isOnline = online
+                changedState.values[leakage.key] = alarm.map { .bool($0) } ?? .null
+                let changedContext = DC(device: changed, state: changedState)
+                let sensor = SensorDetail(dc: changedContext).body
+                #expect(contains(sensor, type: GasSensorDetail.self))
+                #expect(!contains(sensor, type: SmokeSensorDetail.self) && !contains(sensor, type: MotionSensorDetail.self))
+                let shell = GasSensorDetail(dc: changedContext).body
+                let fields = Mirror(reflecting: shell).children
+                let art = try #require(fields.first { $0.label == "art" }?.value as? () -> GasArt)
+                #expect(art().on == online && art().alarm == alarm)
+                #expect(art().tint == (alarm == true ? Color.orange : Color.mint))
+                #expect(fields.first { $0.label == "title" }?.value as? String == (!online ? L("离线", "Offline") : alarm.map { $0 ? L("检测到燃气", "Gas detected") : L("无燃气泄漏", "No gas leak") } ?? L("在线", "Online")))
+                #expect(fields.first { $0.label == "subtitle" }?.value as? String == L("燃气传感器", "Gas sensor"))
+                #expect(contains(shell, type: GasArt.self))
+                #expect(!contains(shell, type: SmokeArt.self) && !contains(shell, type: MotionSensorArt.self))
+                #expect(!contains(shell, type: GenericArt.self) && !contains(shell, type: ThermoArt.self))
+                let gasMetric = Recorder.metrics(changed, changedState).first { $0.name == "gas" }
+                #expect(gasMetric?.value == alarm.map { $0 ? 1.0 : 0.0 })
+            }
+        }
+        let idle = offArt(device, tint: .mint)
+        #expect(contains(idle, type: GasArt.self) && !contains(idle, type: ThermoArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "gas" })
+        #expect(contains(gallery.1, type: GasArt.self) && contains(gallery.2, type: GasArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-sensor-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-sensor-" + suffix, "png") != nil)
+        }
+        for name in ["lumi.sensor_natgas.v1", "lumi.sensor_gas.mcn02", "jiaoyan.gas.t1", "LUMI.SENSOR_NATGAS.DEMO"] {
+            var variant = device
+            variant.model = name
+            #expect(variant.category == .sensor && variant.form == .gas && variant.icon == "flame")
+            let missing = DeviceState(values: [:], spec: nil, legacy: false, source: "cloud")
+            #expect(contains(SensorDetail(dc: DC(device: variant, state: missing)).body, type: GasSensorDetail.self))
+        }
+        for name in ["xiaomi.gasheater.gas.demo", "xiaomi.waterheater.gas.demo", "xiaomi.water_heater.gas.demo"] {
+            var heater = device
+            heater.model = name
+            #expect(heater.category == .waterHeater && heater.form != .gas)
+        }
+        for (name, form) in [("lumi.sensor_motion.demo", DeviceForm.motion), ("lumi.sensor_magnet.aq2", .contact), ("lumi.flood.agl02", .leak)] {
+            var variant = device
+            variant.model = name
+            #expect(variant.category == .sensor && variant.form == form)
+        }
+        var thermometer = device
+        thermometer.model = "miaomiaoce.sensor_ht.t2"
+        #expect(thermometer.category == .sensor && thermometer.form == nil)
+        var generic = device
+        generic.model = "vendor.sensor.demo"
+        #expect(generic.form == nil)
+        #expect(contains(SensorDetail(dc: DC(device: generic, state: state)).body, type: GasSensorDetail.self))
+        var concentrationOnly = state
+        concentrationOnly.spec = DeviceSpec(type: "", description: "", services: [SpecService(iid: 2, type: "gas-sensor", description: "", properties: [concentration], actions: [])])
+        concentrationOnly.values[concentration.key] = .double(100)
+        #expect(DC(device: generic, state: concentrationOnly).gasAlarm == nil)
+        #expect(contains(SensorDetail(dc: DC(device: generic, state: concentrationOnly)).body, type: GasSensorDetail.self))
+        var smoke = device
+        smoke.model = "lumi.sensor_smoke_gas.demo"
+        #expect(smoke.form == .smoke)
+        #expect(contains(SensorDetail(dc: DC(device: smoke, state: state)).body, type: SmokeSensorDetail.self))
+    }
+
+    @Test func gasStatusAlarmMapping() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d39" })
+        let options = ["预热", "监测正常", "自检", "传感器寿命到期", "设备故障", "天然气泄漏报警"].enumerated().map { ValueOption(value: $0.offset, description: $0.element) }
+        let status = SpecProperty(siid: 2, iid: 3, type: "status", description: "", format: "uint8", access: ["read", "notify"], unit: nil, range: nil, options: options)
+        func spec(service: String, properties: [SpecProperty]) -> DeviceSpec {
+            DeviceSpec(type: "gas-sensor", description: "", services: [SpecService(iid: 2, type: service, description: "", properties: properties, actions: [])])
+        }
+        var state = DeviceState(values: [:], spec: spec(service: "gas-sensor", properties: [status]), legacy: false, source: "cloud")
+        #expect(DC(device: device, state: state).gasAlarm == nil)
+        for value in 0...5 {
+            state.values[status.key] = .int(value)
+            #expect(DC(device: device, state: state).gasAlarm == (value == 5))
+            #expect(Recorder.metrics(device, state).first { $0.name == "gas" }?.value == (value == 5 ? 1 : 0))
+            let fields = Mirror(reflecting: GasSensorDetail(dc: DC(device: device, state: state)).body).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> GasArt)
+            #expect(art().alarm == (value == 5))
+        }
+        state.spec = spec(service: "unrelated-service", properties: [status])
+        #expect(DC(device: device, state: state).gasAlarm == nil)
+        let unknownStatus = SpecProperty(siid: 2, iid: 3, type: "status", description: "", format: "uint8", access: ["read"], unit: nil, range: nil, options: nil)
+        state.spec = spec(service: "gas-sensor", properties: [unknownStatus])
+        #expect(DC(device: device, state: state).gasAlarm == nil)
+        let demoState = try #require(model.states[device.did])
+        let leakage = try #require(DC(device: device, state: demoState).p("gas-leakage"))
+        state.spec = spec(service: "gas-sensor", properties: [status, leakage])
+        state.values[leakage.key] = .bool(false)
+        #expect(DC(device: device, state: state).gasAlarm == false)
+        state.values[leakage.key] = .null
+        #expect(DC(device: device, state: state).gasAlarm == nil)
     }
 
     @Test func motionDemoRoutingAndProps() throws {

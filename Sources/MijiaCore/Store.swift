@@ -100,7 +100,7 @@ public enum DeviceCategory: String, Codable, CaseIterable, Sendable {
         if has(".fan.") { return .fan }
         if has("plug", "switch", "outlet", "ctrl_neutral", "ctrl_ln") { return .plug }
         if has("light", "lamp", "bulb", "ceiling") && !has(".airer.") && !has(".clock.") { return .light }
-        if has("sensor", "motion", "flood", "magnet", "weather", "smoke") { return .sensor }
+        if has("sensor", "motion", "flood", "magnet", "weather", "smoke", "natgas", "sensor_gas", ".gas.") { return .sensor }
         if has(".tv.") { return .tv }
         if has("camera", "cateye") { return .camera }
         if has("speaker") { return .speaker }

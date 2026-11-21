@@ -21,6 +21,12 @@ struct DC {
     }
     func num(_ p: SpecProperty?) -> Double? { v(p)?.doubleValue }
     func bool(_ p: SpecProperty?) -> Bool? { v(p)?.boolValue }
+    var gasAlarm: Bool? {
+        if let leakage = p("gas-leakage") { return bool(leakage) }
+        guard let status = p("status", in: "gas-sensor"), status.format.hasPrefix("uint"),
+              Set(status.options?.map(\.value) ?? []) == Set(0...5), let value = num(status) else { return nil }
+        return value == 5
+    }
     /// 译好的显示文本；没有读数返回 nil
     func text(_ p: SpecProperty?) -> String? {
         guard let p, let x = v(p) else { return nil }

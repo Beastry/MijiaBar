@@ -1412,6 +1412,50 @@ struct LeakSensorArt: View {
     }
 }
 
+struct GasArt: View {
+    let on: Bool, alarm: Bool?, tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        let status = alarm == true ? Color.orange : tint
+        let level: Double = on && alarm != nil ? 1 : 0
+        ZStack {
+            Ambient(status, level * (alarm == true ? 0.8 : 0.25), width: 154, height: 124).position(x: 80, y: 68)
+            RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.045))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.stroke, lineWidth: 1))
+                .frame(width: 86, height: 120).position(x: 94, y: 68)
+            ForEach([CGFloat(16), CGFloat(120)], id: \.self) { vertical in
+                Circle().fill(Color.primary.opacity(0.18)).frame(width: 3, height: 3).position(x: 111, y: vertical)
+            }
+            Ellipse().fill(LinearGradient(colors: [Color(white: 0.86), Color(white: 0.61)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .frame(width: 94, height: 102).position(x: 87, y: 70)
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 5, y: 3)
+            Ellipse().fill(shellFill).overlay(Ellipse().stroke(Color.white.opacity(0.8), lineWidth: 1))
+                .frame(width: 88, height: 102).position(x: 73, y: 66)
+            Ellipse().fill(Color(white: 0.88))
+                .overlay {
+                    Path { path in
+                        let spacing: CGFloat = 6
+                        for index in 0..<13 {
+                            let vertical: CGFloat = CGFloat(index) * spacing + 3
+                            path.move(to: CGPoint(x: 0, y: vertical))
+                            path.addLine(to: CGPoint(x: 70, y: vertical))
+                        }
+                    }.stroke(Color(white: 0.64), lineWidth: 1.5).clipShape(Ellipse())
+                }
+                .overlay(Ellipse().stroke(Color.white.opacity(0.8), lineWidth: 1))
+                .frame(width: 70, height: 80).position(x: 73, y: 66)
+            Ellipse().fill(shellFill).overlay(Ellipse().stroke(Color.black.opacity(0.08), lineWidth: 0.75))
+                .frame(width: 23, height: 26).position(x: 73, y: 66)
+            Circle().fill(Color(white: 0.56)).frame(width: 5, height: 5).position(x: 73, y: 66)
+            Circle().fill(status).frame(width: 5, height: 5).opacity(level).position(x: 73, y: 66)
+            Glow(status, level * 0.9, diameter: 5, softness: alarm == true ? 14 : 4).position(x: 73, y: 66)
+        }
+        .frame(width: 160, height: 136)
+        .animation(reduceMotion ? nil : Motion.smooth, value: alarm)
+        .accessibilityHidden(true)
+    }
+}
+
 struct SmokeArt: View {
     let on: Bool, alarm: Bool?, tint: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

@@ -25,6 +25,9 @@ final class Recorder: ObservableObject {
         for (prop, name) in sensorProps {
             if let p = spec.prop(named: prop), let v = s.values[p.key]?.doubleValue { out.append(Metric(name: name, value: v, energy: false)) }
         }
+        if d.category == .sensor, let alarm = DC(device: d, state: s).gasAlarm {
+            out.append(Metric(name: "gas", value: alarm ? 1 : 0, energy: false))
+        }
         return out
     }
     static func powerWatts(_ d: Device, _ s: DeviceState) -> Double? {

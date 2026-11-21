@@ -101,7 +101,7 @@ extension DeviceCategory {
 }
 
 /// 同一类别里外形不一样的设备：插画和列表图标按型号区分
-enum DeviceForm { case doorbell, motion, contact, leak, smoke, kettle, dishwasher, juicer, ihcooker, mfcp, wallSwitch }
+enum DeviceForm { case doorbell, motion, contact, leak, smoke, gas, kettle, dishwasher, juicer, ihcooker, mfcp, wallSwitch }
 
 extension Device {
     var form: DeviceForm? {
@@ -119,6 +119,7 @@ extension Device {
             return m.contains("mfcp") ? .mfcp : nil
         case .sensor:
             if m.contains("smoke") { return .smoke }
+            if m.contains("natgas") || m.contains("sensor_gas") || m.contains(".gas.") { return .gas }
             if m.contains("magnet") { return .contact }
             if m.contains("flood") || m.contains("wleak") { return .leak }
             return m.contains("motion") ? .motion : nil
@@ -132,6 +133,7 @@ extension Device {
         case .contact: return "door.left.hand.closed"
         case .leak: return "drop.triangle"
         case .smoke: return "smoke"
+        case .gas: return "flame"
         case .kettle: return "mug"
         case .dishwasher: return "dishwasher"
         case .juicer: return "cup.and.saucer"

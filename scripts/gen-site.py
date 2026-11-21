@@ -82,7 +82,7 @@ def render(tpl, s, lang, prompts, ver):
     v['redirect'] = redirect_script() if code == 'en' else ''
     v['lang_menu'] = lang_links(code, 10)
     v['lang_footer'] = lang_links(code, 8)
-    # App 支持的 9 种界面语言（不是网站语言），用本语言名称
+    # App 支持的 3 种界面语言（不是网站语言），用本语言名称
     v['lang_names'] = ' '.join(f'<span lang="{c}">{n}</span>' for c, n in APP_LANGS)
     v['lineup'] = '\n'.join(lineup_item(a, s[k]) for a, k in LINEUP)
     v['faq'] = '\n'.join(

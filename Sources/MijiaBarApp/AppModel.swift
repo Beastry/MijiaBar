@@ -204,13 +204,13 @@ final class AppModel: ObservableObject {
     func subtitle(_ d: Device) -> String {
         var parts: [String] = []
         if !d.isOnline { return d.roomName ?? "" }
-        else if let s = states[d.did] {
+        if let s = states[d.did] {
             if let ac = ACState.make(s) {
                 parts.append(ac.power ? "\(ac.modeLabel) \(ac.target.map { "\(Int($0))°" } ?? "")" : L("已关机", "Off"))
             } else if let p = powerInfo(d) { parts.append(p.isOn ? L("已开启", "On") : L("已关闭", "Off")) }
             if let t = sensorText(s) { parts.append(t) }
         } else if stateErrors[d.did] != nil { parts.append(L("无法读取", "Unavailable")) }
-        else if !d.isOnline { } else { parts.append(L("读取中…", "Loading…")) }
+        else { parts.append(L("读取中…", "Loading…")) }
         return parts.isEmpty ? (states[d.did] != nil ? L("在线", "Online") : "") : parts.joined(separator: " · ")
     }
 
@@ -349,8 +349,7 @@ final class AppModel: ObservableObject {
         guard !mock, let cloud = controller.cloud else { return }
         if !quiet { refreshing = true }; defer { if !quiet { refreshing = false } }
         do {
-            let hs = try await cloud.homes(); var all: [Device] = []
-            for h in hs { for d in try await cloud.devices(in: h) where !all.contains(where: { $0.did == d.did }) { all.append(d) } }
+            let (hs, all) = try await cloud.homesAndDevices()
             homes = hs; devices = all; updateHome()
             DeviceCache(homes: hs, devices: all, updated: Date()).save()
             // 手动刷新也要刷新状态：否则列表里的开关停留在第一次读到的样子，读失败的设备一直显示「无法读取」
@@ -401,6 +400,8 @@ final class AppModel: ObservableObject {
         if var s = session { s.region = r; s.save(); session = s; controller.cloud = XiaomiCloud(session: s); clearDeviceState(); Task { await refresh() } }
     }
     func logout() {
+        // 直播助手手里还拿着这个账号的凭据，退出登录时一并停掉
+        LiveManager.shared.stopNow()
         Session.clear(); DeviceCache.clear()
         session = nil; controller.cloud = nil; devices = []; homes = []; clearDeviceState(); page = .list
     }

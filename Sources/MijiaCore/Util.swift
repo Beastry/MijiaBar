@@ -10,8 +10,6 @@ public enum AppLang: String, CaseIterable, Codable, Sendable {
         case .zhHans: return "简体中文"; case .zhHant: return "繁體中文"; case .en: return "English"
         }
     }
-    /// 是否有完整翻译（否则回退英文）
-    public var isComplete: Bool { true }
     /// 各小米服务器地区建议的语言，第一个为默认
     public static func suggested(forRegion r: String) -> [AppLang] {
         switch r {
@@ -62,8 +60,14 @@ public func L(_ zh: String, _ en: String) -> String {
 
 /// 带参数的本地化：模板中的 %@ 依次替换为参数
 public func LF(_ zh: String, _ en: String, _ args: String...) -> String {
-    var s = L(zh, en)
-    for a in args { if let r = s.range(of: "%@") { s.replaceSubrange(r, with: a) } }
+    // 从上一个参数之后接着找：参数本身含 "%@"（比如设备名）时，不能把下一个参数填进去
+    var s = L(zh, en), from = s.startIndex
+    for a in args {
+        guard let r = s.range(of: "%@", range: from..<s.endIndex) else { break }
+        let at = s.distance(from: s.startIndex, to: r.lowerBound)
+        s.replaceSubrange(r, with: a)
+        from = s.index(s.startIndex, offsetBy: at + a.count)
+    }
     return s
 }
 
@@ -74,7 +78,7 @@ public func anyString(_ a: Any?) -> String {
 }
 
 public enum MijiaError: LocalizedError {
-    case unknownProperty(String), deviceNotFound(String), noSpec(String), denied(String), notWritable(String)
+    case unknownProperty(String), deviceNotFound(String), noSpec(String), denied(String), notWritable(String), badValue(String)
     public var errorDescription: String? {
         switch self {
         case .unknownProperty(let p): return L("未知属性/动作：", "Unknown property/action: ") + p
@@ -82,6 +86,7 @@ public enum MijiaError: LocalizedError {
         case .noSpec(let m): return L("没有找到该型号的 MIoT 规格：", "No MIoT spec for model: ") + m
         case .denied(let r): return L("Agent 权限不允许：", "Denied by agent policy: ") + r
         case .notWritable(let p): return L("属性不可写：", "Property not writable: ") + p
+        case .badValue(let v): return L("值无效：", "Invalid value: ") + v
         }
     }
 }

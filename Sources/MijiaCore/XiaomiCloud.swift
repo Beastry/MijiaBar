@@ -122,6 +122,13 @@ public final class XiaomiCloud: Sendable {
         }
     }
 
+    /// 所有家庭（含共享的）和里面的设备；同一台设备出现在多个家庭时只保留第一次（App 和命令行共用）
+    public func homesAndDevices() async throws -> (homes: [Home], devices: [Device]) {
+        let hs = try await homes(); var all: [Device] = []; var seen = Set<String>()
+        for h in hs { for d in try await devices(in: h) where seen.insert(d.did).inserted { all.append(d) } }
+        return (hs, all)
+    }
+
     public func getProps(did: String, _ ps: [(Int, Int)]) async throws -> [String: Any] {
         let r = try await call("/miotspec/prop/get", ["params": ps.map { ["did": did, "siid": $0.0, "piid": $0.1] }]) as? [[String: Any]] ?? []
         var out: [String: Any] = [:]

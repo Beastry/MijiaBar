@@ -21,10 +21,20 @@ func loadJSON<T: Decodable>(_ t: T.Type, _ name: String) -> T? {
 }
 func saveJSON<T: Encodable>(_ v: T, _ name: String) {
     let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601; enc.outputFormatting = [.prettyPrinted, .sortedKeys]
-    let url = Paths.support.appendingPathComponent(name)
     guard let d = try? enc.encode(v) else { return }
-    try? d.write(to: url, options: .atomic)
-    try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    writePrivate(d, to: Paths.support.appendingPathComponent(name))
+}
+/// 原子写入，文件从创建起就是 0600：先写同目录下的临时文件（创建时即 0600）再改名。
+/// Data.write(.atomic) 的临时文件按 umask 创建，改名后再 chmod 之间有一小段时间不是 0600（devices.json 里有局域网 token）。
+@discardableResult
+func writePrivate(_ data: Data, to url: URL) -> Bool {
+    let tmp = url.deletingLastPathComponent().appendingPathComponent(".\(url.lastPathComponent).\(UUID().uuidString).tmp")
+    let fd = open(tmp.path, O_WRONLY | O_CREAT | O_EXCL, 0o600)
+    guard fd >= 0 else { return false }
+    let h = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+    do { try h.write(contentsOf: data); try h.close() } catch { unlink(tmp.path); return false }
+    guard rename(tmp.path, url.path) == 0 else { unlink(tmp.path); return false }
+    return true
 }
 
 /// 登录凭据只存在 macOS 钥匙串里

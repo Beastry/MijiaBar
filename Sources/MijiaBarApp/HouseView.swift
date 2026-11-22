@@ -815,6 +815,7 @@ struct HouseBadge: View {
         switch device.category {
         case .light: return Color(red: 1, green: 0.8, blue: 0.4)
         case .tv, .camera: return Color(red: 0.5, green: 0.75, blue: 1)
+        case .gateway: return device.category.color
         case .ac, .fan, .airPurifier, .purifier, .dehumidifier, .humidifier, .vacuum: return Color(red: 0.55, green: 0.9, blue: 1)
         case .heater, .kitchen, .waterHeater: return Color(red: 1, green: 0.6, blue: 0.3)
         default: return Color(red: 0.55, green: 1, blue: 0.6)

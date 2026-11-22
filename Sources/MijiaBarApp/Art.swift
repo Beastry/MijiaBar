@@ -325,6 +325,41 @@ struct AirerArt: View {
     }
 }
 
+struct GatewayArt: View {
+    let on: Bool, tint: Color
+    var body: some View {
+        PowerTimeline(on: on) { _, level in
+            ZStack {
+                Ambient(tint, 0.45 * level, width: 200, height: 120)
+                RoundedRectangle(cornerRadius: 25).appliance(tint, 0.3 * level)
+                    .brightness(-0.12 * (1 - level)).frame(width: 154, height: 72).offset(y: 10)
+                RoundedRectangle(cornerRadius: 25).fill(shellFill)
+                    .overlay(RoundedRectangle(cornerRadius: 25).stroke(Color.white.opacity(0.7), lineWidth: 1))
+                    .brightness(-0.08 * (1 - level)).frame(width: 154, height: 66).offset(y: -14)
+                Ellipse().fill(RadialGradient(colors: [tint.opacity(0.22 * level), .clear], center: .center, startRadius: 0, endRadius: 80))
+                    .frame(width: 174, height: 78).offset(y: -14)
+                RoundedRectangle(cornerRadius: 20).stroke(tint.opacity(0.12 * level), lineWidth: 8)
+                    .frame(width: 124, height: 44).offset(y: -14)
+                RoundedRectangle(cornerRadius: 20).stroke(Color(white: 0.64), lineWidth: 2)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(tint.opacity(level), lineWidth: 2))
+                    .frame(width: 124, height: 44).offset(y: -14)
+                VStack(spacing: 3) {
+                    ForEach(0..<5) { _ in
+                        HStack(spacing: 4) {
+                            ForEach(0..<9) { _ in
+                                Ellipse().fill(Color.primary.opacity(0.16)).frame(width: 2, height: 1.2)
+                            }
+                        }
+                    }
+                }.offset(y: -14)
+                Capsule().fill(Color.primary.opacity(0.08)).frame(width: 112, height: 2).offset(y: 34)
+            }
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 struct ClockArt: View {
     let on: Bool, tint: Color
     var body: some View {

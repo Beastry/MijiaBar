@@ -8,15 +8,91 @@ import MijiaCore
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
-                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"),
+                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"), (.gateway, "gateway"),
                                 (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 37)
+        #expect(ArtGallery.rows.count == 38)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func gatewayDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d40" })
+        #expect(device.category == .gateway && device.category.rawValue == "gateway")
+        #expect(device.model == "lumi.gateway.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("客厅", "Living room"))
+        #expect(device.name == L("网关", "Gateway") && device.icon == "antenna.radiowaves.left.and.right")
+        #expect(device.category.color == Color(red: 0.35, green: 0.48, blue: 0.86))
+        #expect(zhCategory(device.category) == L("网关", "Gateway"))
+        #expect(HouseCatalog.deviceClass(category: .gateway) == .badge)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.spec?.type == "urn:miot-spec-v2:device:gateway:0")
+        let light = try #require(context.p("on", in: "light"))
+        let brightness = try #require(context.p("brightness", in: "light"))
+        #expect(light.writable && light.format == "bool" && context.bool(light) == true)
+        #expect(model.powerInfo(device)?.key == light.key)
+        #expect(brightness.writable && brightness.format == "uint8" && brightness.range == [1, 100, 1])
+        #expect(context.num(brightness) == 80 && primarySliderProp(context)?.key == brightness.key)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> GatewayArt { return contains(art(), type: type) }
+            if let content = value as? () -> TupleView<(PropSlider?, HStack<PropTile?>)> { return contains(content(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        func checkShell(_ shell: some View, on: Bool, hasPower: Bool) throws {
+            let fields = Mirror(reflecting: shell).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> GatewayArt)
+            let handler = try #require(fields.first { $0.label == "onPower" }?.value)
+            #expect(fields.first { $0.label == "isOn" }?.value as? Bool == on)
+            #expect(art().on == on)
+            #expect(!Mirror(reflecting: handler).children.isEmpty == hasPower)
+            #expect(fields.first { $0.label == "subtitle" }?.value as? String == L("网关", "Gateway"))
+            #expect(fields.first { $0.label == "title" }?.value as? String == (on ? L("已开启", "On") : L("已关闭", "Off")))
+        }
+        for on in [true, false] {
+            state.values[light.key] = .bool(on)
+            let detail = GatewayDetail(dc: DC(device: device, state: state))
+            #expect(detail.light?.key == light.key && detail.power?.key == light.key && detail.on == on)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: GatewayDetail.self))
+            #expect(contains(detail.body, type: GatewayArt.self))
+            #expect(!contains(routed, type: DeviceCardView.self) && !contains(detail.body, type: GenericArt.self))
+            try checkShell(detail.body, on: on, hasPower: true)
+        }
+        let idle = offArt(device, tint: device.category.color)
+        #expect(contains(idle, type: GatewayArt.self) && !contains(idle, type: GenericArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "gateway" })
+        #expect(contains(gallery.1, type: GatewayArt.self) && contains(gallery.2, type: GatewayArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-gateway-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-gateway-" + suffix, "png") != nil)
+        }
+        state.spec = nil
+        let absent = GatewayDetail(dc: DC(device: device, state: state))
+        #expect(absent.light == nil && absent.power == nil && primarySliderProp(absent.dc) == nil)
+        #expect(!contains(absent.body, type: PropSlider.self) && !contains(absent.body, type: PropTile.self))
+        try checkShell(absent.body, on: false, hasPower: false)
+        for access in [["read"], ["read", "write"]] {
+            let spec = DeviceSpec.parse(["services": [["iid": 2, "type": "light", "properties": [
+                ["iid": 1, "type": "on", "format": "bool", "access": access],
+                ["iid": 2, "type": "brightness", "format": "uint8", "access": access, "value-range": [1, 100, 1]]
+            ]]]])
+            let detail = GatewayDetail(dc: DC(device: device, state: DeviceState(values: ["2.1": .bool(true)], spec: spec, legacy: false, source: "cloud")))
+            #expect((primarySliderProp(detail.dc) != nil) == access.contains("write"))
+            #expect(contains(detail.body, type: PropSlider.self) == access.contains("write"))
+            try checkShell(detail.body, on: true, hasPower: access.contains("write"))
+        }
+        let powerOnly = DeviceSpec.parse(["services": [["iid": 2, "type": "gateway", "properties": [
+            ["iid": 1, "type": "on", "format": "bool", "access": ["read", "write"]]
+        ]]]])
+        let detail = GatewayDetail(dc: DC(device: device, state: DeviceState(values: ["2.1": .bool(true)], spec: powerOnly, legacy: false, source: "cloud")))
+        #expect(detail.light?.key == "2.1" && primarySliderProp(detail.dc) == nil)
+        #expect(!contains(detail.body, type: PropSlider.self) && !contains(detail.body, type: PropTile.self))
+        try checkShell(detail.body, on: true, hasPower: true)
     }
 
     @Test func clockDemoRoutingAndProps() throws {

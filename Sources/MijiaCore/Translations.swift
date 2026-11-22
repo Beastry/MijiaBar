@@ -6,6 +6,7 @@ import Foundation
 public let hantTable: [String: String] = [
     "室温 ": "室溫 ",
     "门锁": "門鎖",
+    "网关": "網關",
     "晾衣架": "晾衣架",
     "已降下": "已降下",
     "已升起": "已升起",

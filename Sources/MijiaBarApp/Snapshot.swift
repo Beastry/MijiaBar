@@ -54,6 +54,7 @@ extension AppModel {
             dev("d37", L("闹钟", "Clock"), "yeelink.clock.demo", L("主卧", "Bedroom"), home: "h2"),
             dev("d38", L("烟雾传感器", "Smoke sensor"), "lumi.sensor_smoke.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d39", L("燃气传感器", "Gas sensor"), "lumi.sensor_natgas.demo", L("厨房", "Kitchen"), home: "h2"),
+            dev("d40", L("网关", "Gateway"), "lumi.gateway.demo", L("客厅", "Living room"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -134,6 +135,9 @@ extension AppModel {
             S(2, "gas-sensor", [P(2, 1, "gas-leakage", "bool", ["read", "notify"]),
                               P(2, 2, "gas-concentration", "float", ["read", "notify"], range: [0, 100, 1], unit: "percentage")]), battery])
         states["d39"] = DeviceState(values: ["2.1": .bool(false), "2.2": .double(1), "3.1": .int(96)], spec: gas, legacy: false, source: "cloud")
+        let gateway = DeviceSpec(type: "urn:miot-spec-v2:device:gateway:0", description: "Gateway", services: [
+            S(2, "light", [P(2, 1, "on", "bool"), P(2, 2, "brightness", "uint8", range: [1, 100, 1], unit: "percentage")])])
+        states["d40"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(80)], spec: gateway, legacy: false, source: "cloud")
         let humidifier = DeviceSpec(type: "", description: "", services: [S(2, "humidifier", [
             P(2, 1, "on", "bool"), P(2, 2, "target-humidity", "uint8", range: [30, 80, 5], unit: "percentage"),
             P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Manual")]),
@@ -271,6 +275,7 @@ struct ArtGallery: View {
             ("lock", AnyView(LockArt(locked: true, tint: DeviceCategory.lock.color)), AnyView(LockArt(locked: false, tint: DeviceCategory.lock.color))),
             ("airer", AnyView(AirerArt(lowered: true, lightOn: true, tint: DeviceCategory.airer.color)), AnyView(AirerArt(lowered: false, lightOn: false, tint: DeviceCategory.airer.color))),
             ("clock", AnyView(ClockArt(on: true, tint: DeviceCategory.clock.color)), AnyView(ClockArt(on: false, tint: DeviceCategory.clock.color))),
+            ("gateway", AnyView(GatewayArt(on: true, tint: DeviceCategory.gateway.color)), AnyView(GatewayArt(on: false, tint: DeviceCategory.gateway.color))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -494,6 +499,9 @@ enum Snapshot {
             m.page = .detail("d39"); render(root, f("gas"))
             m.states["d39"]?.values["2.1"] = .bool(true); render(root, f("gas-alarm"))
             m.states["d39"]?.values["2.1"] = .bool(false)
+            m.page = .detail("d40"); render(root, f("gateway"))
+            m.states["d40"]?.values["2.1"] = .bool(false); render(root, f("gateway-idle"))
+            m.states["d40"]?.values["2.1"] = .bool(true)
             m.states["d34"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))

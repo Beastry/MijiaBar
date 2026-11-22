@@ -324,7 +324,7 @@ extension View {
     switch dc.device.category {
     case .fan: return dc.spec?.controlServices.flatMap(\.properties).first { $0.name == "fan-level" && $0.options != nil } ?? dc.p("fan-level") ?? dc.p("speed-level")
     case .light: return dc.p("brightness")
-    case .clock: return dc.p("brightness")?.writable == true ? dc.p("brightness") : nil
+    case .clock, .gateway: return dc.p("brightness")?.writable == true ? dc.p("brightness") : nil
     case .curtain, .airer: return dc.p("target-position")?.writable == true ? dc.p("target-position") : nil
     case .heater: return dc.p("target-temperature")
     case .fridge, .waterHeater: return dc.p("target-temperature")?.writable == true ? dc.p("target-temperature") : nil

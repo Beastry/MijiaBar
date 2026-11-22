@@ -61,6 +61,7 @@ extension DeviceCategory {
         case .lock: return "lock.fill"
         case .airer: return "hanger"
         case .clock: return "deskclock"
+        case .gateway: return "antenna.radiowaves.left.and.right"
         case .printer: return "printer"
         case .purifier: return "drop"
         case .other: return "square.grid.2x2"
@@ -88,6 +89,7 @@ extension DeviceCategory {
         case .lock: return .brown
         case .airer: return .mint
         case .clock: return Color(red: 0.95, green: 0.70, blue: 0.25)
+        case .gateway: return Color(red: 0.35, green: 0.48, blue: 0.86)
         case .printer: return .blue
         case .purifier: return .blue
         case .other: return .indigo

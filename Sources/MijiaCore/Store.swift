@@ -81,6 +81,7 @@ public enum DeviceCategory: String, Codable, CaseIterable, Sendable {
     /// 小屋里画在房间美术里的家电：窗帘、冰箱、洗衣机 / 干衣机、热水器
     case curtain, fridge, washer
     case waterHeater = "water-heater"
+    case bathHeater = "bath-heater"
     public static func guess(_ model: String) -> DeviceCategory {
         let m = model.lowercased()
         func has(_ s: String...) -> Bool { s.contains { m.contains($0) } }
@@ -95,6 +96,7 @@ public enum DeviceCategory: String, Codable, CaseIterable, Sendable {
         if has("acpartner", "aircondition", ".ac.", "airc") { return .ac }
         if has("vacuum", "roborock", "sweeper", ".robot.") { return .vacuum }
         if has("humidifier", "jsq") && !has("dehumid", "derh") { return .humidifier }
+        if has("bhf_light", ".bhf.", "bath-heater", "bath_heater", "bathheater") { return .bathHeater }
         if has("heater") { return .heater }
         if has("derh", "dehumid") { return .dehumidifier }
         if has(".fan.") { return .fan }

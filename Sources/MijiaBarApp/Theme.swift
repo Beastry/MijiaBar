@@ -49,6 +49,7 @@ extension DeviceCategory {
         case .light: return "lightbulb"
         case .fan: return "fan"
         case .heater: return "heater.vertical"
+        case .bathHeater: return "fan.and.light.ceiling"
         case .dehumidifier: return "dehumidifier"
         case .humidifier: return "humidifier"
         case .vacuum: return "circle.circle"
@@ -79,6 +80,7 @@ extension DeviceCategory {
         case .light: return .yellow
         case .fan: return .teal
         case .heater: return Theme.heat
+        case .bathHeater: return Color(red: 0.86, green: 0.42, blue: 0.35)
         case .dehumidifier, .humidifier, .vacuum: return .cyan
         case .sensor: return .mint
         case .tv: return .indigo

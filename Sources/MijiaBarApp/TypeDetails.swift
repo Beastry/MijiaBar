@@ -15,6 +15,7 @@ struct TypeDetailView: View {
         case .airer: AirerDetail(dc: dc)
         case .clock: ClockDetail(dc: dc)
         case .gateway: GatewayDetail(dc: dc)
+        case .bathHeater: BathHeaterDetail(dc: dc)
         case .humidifier: HumidifierDetail(dc: dc)
         case .vacuum: VacuumDetail(dc: dc)
         case .fridge: FridgeDetail(dc: dc)
@@ -94,6 +95,7 @@ struct DeviceStatusCard: View {
     case .airer: AirerArt(lowered: false, lightOn: false, tint: tint)
     case .clock: ClockArt(on: false, tint: tint)
     case .gateway: GatewayArt(on: false, tint: tint)
+    case .bathHeater: BathHeaterArt(on: false, tint: tint)
     case .ac: ACIllustration(on: false, tint: tint)
     case .fan: FanArt(on: false, level: 0.5, swing: false, tint: tint)
     case .light: BulbArt(on: false, brightness: 0.7, kelvin: nil)
@@ -294,6 +296,38 @@ struct AirerDetail: View {
                 if let light { PropTile(dc: dc, prop: light, title: L("照明", "Light"), icon: "lightbulb", tint: tint) }
                 if let position { PropTile(dc: dc, prop: position, title: L("当前位置", "Position"), icon: "arrow.up.and.down", tint: tint) }
                 if let drying = dc.p("drying") { PropTile(dc: dc, prop: drying, title: L("烘干", "Drying"), icon: "wind", tint: tint) }
+            }
+        }
+    }
+}
+
+struct BathHeaterDetail: View {
+    @EnvironmentObject var m: AppModel
+    let dc: DC
+    var light: SpecProperty? { dc.p("on", in: "light") ?? dc.p("on") }
+    var power: SpecProperty? { light.flatMap { $0.writable && $0.format == "bool" ? $0 : nil } }
+    var heating: SpecProperty? { dc.p("heating") ?? dc.p("on", in: "ptc-bath-heater") }
+    var ventilation: SpecProperty? { dc.p("ventilation") }
+    var blow: SpecProperty? { dc.p("blow") }
+    var lightOn: Bool { dc.bool(light) ?? false }
+    var on: Bool { [light, heating, ventilation, blow].contains { dc.bool($0) == true } }
+    var title: String {
+        if dc.bool(heating) == true { return L("加热中", "Heating") }
+        if dc.bool(ventilation) == true { return L("换气中", "Ventilating") }
+        if dc.bool(blow) == true { return L("吹风中", "Blowing") }
+        return lightOn ? L("照明已开", "Light on") : L("已关闭", "Off")
+    }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on, title: title, subtitle: L("浴霸", "Bath heater"),
+                  powerOn: dc.bool(light), onPower: power.map { prop in { m.write(device, prop.key, .bool(!lightOn)) } }) {
+            BathHeaterArt(on: on, tint: tint)
+        } content: {
+            if let brightness = primarySliderProp(dc) { PropSlider(dc: dc, prop: brightness, colors: [.gray, tint], enabled: lightOn) }
+            HStack(spacing: 8) {
+                if let heating { PropTile(dc: dc, prop: heating, title: L("加热", "Heating"), icon: "flame", tint: tint) }
+                if let ventilation { PropTile(dc: dc, prop: ventilation, title: L("换气", "Ventilation"), icon: "arrow.triangle.2.circlepath", tint: tint) }
+                if let blow { PropTile(dc: dc, prop: blow, title: L("吹风", "Blow"), icon: "wind", tint: tint) }
             }
         }
     }

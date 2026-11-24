@@ -8,15 +8,88 @@ import MijiaCore
         let model = AppModel(mock: true)
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
-                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"), (.gateway, "gateway"),
+                                (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"), (.gateway, "gateway"), (.bathHeater, "bath-heater"),
                                 (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 38)
+        #expect(ArtGallery.rows.count == 39)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func bathHeaterDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d41" })
+        #expect(device.category == .bathHeater && device.category.rawValue == "bath-heater")
+        #expect(device.model == "yeelink.bhf_light.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("浴室", "Bathroom"))
+        #expect(device.name == L("浴霸", "Bath heater") && device.icon == "fan.and.light.ceiling")
+        #expect(device.category.color == Color(red: 0.86, green: 0.42, blue: 0.35))
+        #expect(zhCategory(device.category) == L("浴霸", "Bath heater"))
+        #expect(HouseCatalog.deviceClass(category: .bathHeater) == .badge)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.spec?.type == "urn:miot-spec-v2:device:bath-heater:0")
+        let light = try #require(context.p("on", in: "light"))
+        let brightness = try #require(context.p("brightness", in: "light"))
+        let heating = try #require(context.p("heating", in: "ptc-bath-heater"))
+        let ventilation = try #require(context.p("ventilation", in: "ptc-bath-heater"))
+        for prop in [light, heating, ventilation] { #expect(prop.writable && prop.format == "bool") }
+        #expect(context.bool(light) == true && context.bool(heating) == true && context.bool(ventilation) == false)
+        #expect(model.powerInfo(device)?.key == light.key)
+        #expect(brightness.writable && brightness.format == "uint8" && brightness.range == [1, 100, 1])
+        #expect(context.num(brightness) == 80 && primarySliderProp(context)?.key == brightness.key)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> BathHeaterArt { return contains(art(), type: type) }
+            if let content = value as? () -> TupleView<(PropSlider?, HStack<TupleView<(PropTile?, PropTile?, PropTile?)>>)> { return contains(content(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        for (lightOn, heatingOn, ventilationOn, title) in [
+            (true, true, true, L("加热中", "Heating")), (true, false, true, L("换气中", "Ventilating")),
+            (true, false, false, L("照明已开", "Light on")), (false, false, false, L("已关闭", "Off")),
+            (false, true, false, L("加热中", "Heating")), (false, false, true, L("换气中", "Ventilating"))] {
+            state.values[light.key] = .bool(lightOn); state.values[heating.key] = .bool(heatingOn); state.values[ventilation.key] = .bool(ventilationOn)
+            let detail = BathHeaterDetail(dc: DC(device: device, state: state))
+            #expect(detail.light == light && detail.power == light && detail.heating == heating && detail.ventilation == ventilation && detail.blow == nil)
+            #expect(detail.lightOn == lightOn && detail.on == (lightOn || heatingOn || ventilationOn) && detail.title == title)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: BathHeaterDetail.self))
+            #expect(!contains(routed, type: LightDetail.self) && !contains(routed, type: HeaterDetail.self) && !contains(routed, type: DeviceCardView.self))
+            #expect(contains(detail.body, type: BathHeaterArt.self) && contains(detail.body, type: PropSlider.self) && contains(detail.body, type: PropTile.self))
+            #expect(!contains(detail.body, type: BulbArt.self) && !contains(detail.body, type: HeaterArt.self) && !contains(detail.body, type: GenericArt.self))
+            let fields = Mirror(reflecting: detail.body).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> BathHeaterArt)
+            #expect(art().on == detail.on)
+            #expect(fields.first { $0.label == "isOn" }?.value as? Bool == detail.on)
+            #expect(fields.first { $0.label == "powerOn" }?.value as? Bool == lightOn)
+            #expect(fields.first { $0.label == "title" }?.value as? String == title)
+            #expect(fields.first { $0.label == "subtitle" }?.value as? String == L("浴霸", "Bath heater"))
+        }
+        #expect(contains(offArt(device, tint: device.category.color), type: BathHeaterArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "bath-heater" })
+        #expect(contains(gallery.1, type: BathHeaterArt.self) && contains(gallery.2, type: BathHeaterArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-bath-heater-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-bath-heater-" + suffix, "png") != nil)
+        }
+        state.spec = nil
+        let absent = BathHeaterDetail(dc: DC(device: device, state: state))
+        #expect(absent.light == nil && absent.power == nil && !absent.on && absent.title == L("已关闭", "Off"))
+        #expect(!contains(absent.body, type: PropSlider.self) && !contains(absent.body, type: PropTile.self))
+        for access in [["read"], ["read", "write"]] {
+            state.spec = DeviceSpec.parse(["services": [["iid": 2, "type": "ptc-bath-heater", "properties": [
+                ["iid": 1, "type": "on", "format": "bool", "access": access],
+                ["iid": 2, "type": "blow", "format": "bool", "access": access]]]]])
+            state.values = ["2.1": .bool(false), "2.2": .bool(true)]
+            let detail = BathHeaterDetail(dc: DC(device: device, state: state))
+            #expect(detail.on && detail.title == L("吹风中", "Blowing") && detail.blow != nil)
+            #expect((detail.power != nil) == access.contains("write"))
+            #expect(!contains(detail.body, type: PropSlider.self))
+            state.values["2.1"] = .bool(true)
+            #expect(BathHeaterDetail(dc: DC(device: device, state: state)).title == L("加热中", "Heating"))
+        }
     }
 
     @Test func gatewayDemoRoutingAndProps() throws {

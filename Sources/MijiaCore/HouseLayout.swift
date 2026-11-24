@@ -170,7 +170,7 @@ public enum HouseCatalog {
         case .fridge: return .fixture(.fridge)
         case .washer: return .fixture(.washer)
         case .waterHeater: return .fixture(.waterHeater)
-        case .plug, .sensor, .camera, .speaker, .kitchen, .hood, .lock, .airer, .clock, .gateway, .printer, .purifier, .other: return .badge
+        case .plug, .sensor, .camera, .speaker, .kitchen, .hood, .lock, .airer, .clock, .gateway, .bathHeater, .printer, .purifier, .other: return .badge
         }
     }
 

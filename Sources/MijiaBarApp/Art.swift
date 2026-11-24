@@ -253,6 +253,34 @@ struct BulbGlass: Shape {
     }
 }
 
+struct BathHeaterArt: View {
+    let on: Bool, tint: Color
+    var body: some View {
+        ZStack {
+            Ambient(tint, on ? 0.35 : 0, width: 200, height: 125)
+            RoundedRectangle(cornerRadius: 9).fill(aluminum)
+                .frame(width: 184, height: 112).offset(y: 5)
+            RoundedRectangle(cornerRadius: 8).appliance(tint, on ? 0.25 : 0)
+                .frame(width: 184, height: 106)
+            RoundedRectangle(cornerRadius: 5).fill(Color(white: 0.52))
+                .frame(width: 100, height: 84).offset(x: -30)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(LinearGradient(colors: on ? [Color(red: 1, green: 0.98, blue: 0.88), Color(red: 1, green: 0.85, blue: 0.67), tint.opacity(0.55)] : [Color(white: 0.57), Color(white: 0.39)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .frame(width: 94, height: 78).offset(x: -30)
+            RoundedRectangle(cornerRadius: 4).fill(Color(white: on ? 0.37 : 0.30))
+                .frame(width: 44, height: 84).offset(x: 52)
+            VStack(spacing: 5) {
+                ForEach(0..<9) { _ in
+                    Capsule().fill(aluminum).frame(width: 34, height: 3)
+                }
+            }.offset(x: 52)
+            Capsule().fill(on ? tint : Color(white: 0.48)).frame(width: 16, height: 2).offset(x: 52, y: 36)
+        }
+        .frame(width: 240, height: 136)
+        .accessibilityHidden(true)
+    }
+}
+
 struct HoodArt: View {
     let on: Bool, tint: Color
     var body: some View {

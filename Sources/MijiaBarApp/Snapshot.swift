@@ -55,6 +55,7 @@ extension AppModel {
             dev("d38", L("烟雾传感器", "Smoke sensor"), "lumi.sensor_smoke.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d39", L("燃气传感器", "Gas sensor"), "lumi.sensor_natgas.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d40", L("网关", "Gateway"), "lumi.gateway.demo", L("客厅", "Living room"), home: "h2"),
+            dev("d41", L("浴霸", "Bath heater"), "yeelink.bhf_light.demo", L("浴室", "Bathroom"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -138,6 +139,10 @@ extension AppModel {
         let gateway = DeviceSpec(type: "urn:miot-spec-v2:device:gateway:0", description: "Gateway", services: [
             S(2, "light", [P(2, 1, "on", "bool"), P(2, 2, "brightness", "uint8", range: [1, 100, 1], unit: "percentage")])])
         states["d40"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(80)], spec: gateway, legacy: false, source: "cloud")
+        let bathHeater = DeviceSpec(type: "urn:miot-spec-v2:device:bath-heater:0", description: "Bath heater", services: [
+            S(2, "light", [P(2, 1, "on", "bool"), P(2, 2, "brightness", "uint8", range: [1, 100, 1], unit: "percentage")]),
+            S(3, "ptc-bath-heater", [P(3, 1, "heating", "bool"), P(3, 2, "ventilation", "bool")])])
+        states["d41"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(80), "3.1": .bool(true), "3.2": .bool(false)], spec: bathHeater, legacy: false, source: "cloud")
         let humidifier = DeviceSpec(type: "", description: "", services: [S(2, "humidifier", [
             P(2, 1, "on", "bool"), P(2, 2, "target-humidity", "uint8", range: [30, 80, 5], unit: "percentage"),
             P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Manual")]),
@@ -276,6 +281,7 @@ struct ArtGallery: View {
             ("airer", AnyView(AirerArt(lowered: true, lightOn: true, tint: DeviceCategory.airer.color)), AnyView(AirerArt(lowered: false, lightOn: false, tint: DeviceCategory.airer.color))),
             ("clock", AnyView(ClockArt(on: true, tint: DeviceCategory.clock.color)), AnyView(ClockArt(on: false, tint: DeviceCategory.clock.color))),
             ("gateway", AnyView(GatewayArt(on: true, tint: DeviceCategory.gateway.color)), AnyView(GatewayArt(on: false, tint: DeviceCategory.gateway.color))),
+            ("bath-heater", AnyView(BathHeaterArt(on: true, tint: DeviceCategory.bathHeater.color)), AnyView(BathHeaterArt(on: false, tint: DeviceCategory.bathHeater.color))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -502,6 +508,10 @@ enum Snapshot {
             m.page = .detail("d40"); render(root, f("gateway"))
             m.states["d40"]?.values["2.1"] = .bool(false); render(root, f("gateway-idle"))
             m.states["d40"]?.values["2.1"] = .bool(true)
+            m.page = .detail("d41"); render(root, f("bath-heater"))
+            m.states["d41"]?.values["2.1"] = .bool(false); m.states["d41"]?.values["3.1"] = .bool(false)
+            render(root, f("bath-heater-idle"))
+            m.states["d41"]?.values["2.1"] = .bool(true); m.states["d41"]?.values["3.1"] = .bool(true)
             m.states["d34"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))

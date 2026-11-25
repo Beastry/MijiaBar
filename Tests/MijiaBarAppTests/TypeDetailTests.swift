@@ -9,14 +9,90 @@ import MijiaCore
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
                                 (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"), (.gateway, "gateway"), (.bathHeater, "bath-heater"),
-                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier")] {
+                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier"), (.waterDispenser, "water-dispenser")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 39)
+        #expect(ArtGallery.rows.count == 40)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func waterDispenserDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d42" })
+        #expect(device.category == .waterDispenser && device.category.rawValue == "water-dispenser")
+        #expect(device.model == "yunmi.ysj.demo" && device.form == nil)
+        #expect(device.name == L("饮水机", "Water dispenser"))
+        #expect(device.homeId == "h2" && device.roomName == L("厨房", "Kitchen"))
+        #expect(device.icon == "waterbottle" && zhCategory(device.category) == L("饮水机", "Water dispenser"))
+        #expect(device.category.color == Color(red: 0.20, green: 0.58, blue: 0.72))
+        #expect(HouseCatalog.deviceClass(category: device.category, model: device.model) == .badge)
+        #expect(HouseChipStyle.tint(device.category) == device.category.color)
+        var state = try #require(model.states[device.did])
+        let context = DC(device: device, state: state)
+        #expect(context.spec?.type == "urn:miot-spec-v2:device:water-dispenser:0")
+        let power = try #require(context.p("on", in: "water-dispenser"))
+        let target = try #require(context.p("target-temperature"))
+        #expect(model.powerInfo(device)?.key == power.key && context.bool(power) == true)
+        #expect(target.writable && target.range == [25, 95, 5] && context.num(target) == 45)
+        #expect(context.num(context.p("outlet-temperature")) == 45)
+        #expect(context.num(context.p("water-level")) == 75)
+        #expect(context.p("mode")?.writable == true && context.p("mode")?.options?.count == 2)
+        #expect(context.p("physical-controls-locked")?.writable == true && context.bool(context.p("physical-controls-locked")) == true)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> WaterDispenserArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        for on in [true, false] {
+            state.values[power.key] = .bool(on)
+            let detail = WaterDispenserDetail(dc: DC(device: device, state: state))
+            #expect(detail.on == on && detail.title == (on ? L("已开启", "On") : L("已关闭", "Off")))
+            #expect(detail.power == power && detail.writablePower == power && detail.target == target)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: WaterDispenserDetail.self))
+            #expect(!contains(routed, type: PurifierDetail.self) && !contains(routed, type: KettleDetail.self) && !contains(routed, type: WaterHeaterDetail.self) && !contains(routed, type: DeviceCardView.self))
+            #expect(contains(detail.body, type: WaterDispenserArt.self))
+            #expect(!contains(detail.body, type: PurifierArt.self) && !contains(detail.body, type: KettleArt.self) && !contains(detail.body, type: WaterHeaterArt.self) && !contains(detail.body, type: GenericArt.self))
+            let fields = Mirror(reflecting: detail.body).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> WaterDispenserArt)
+            #expect(art().on == on && art().tint == device.category.color)
+            #expect(fields.first { $0.label == "isOn" }?.value as? Bool == on)
+            #expect(fields.first { $0.label == "powerOn" }?.value as? Bool == on)
+            #expect(fields.first { $0.label == "onPower" }?.value is () -> Void)
+            #expect(fields.first { $0.label == "subtitle" }?.value as? String == L("饮水机", "Water dispenser"))
+        }
+        let idle = offArt(device, tint: device.category.color)
+        #expect(contains(idle, type: WaterDispenserArt.self) && !contains(idle, type: PurifierArt.self) && !contains(idle, type: GenericArt.self))
+        let gallery = try #require(ArtGallery.rows.first { $0.0 == "water-dispenser" })
+        #expect(contains(gallery.1, type: WaterDispenserArt.self) && contains(gallery.2, type: WaterDispenserArt.self))
+        for suffix in ["on", "off"] {
+            #expect(AppResources.url("badge-water-dispenser-" + suffix, "png", subdirectory: "House")
+                ?? AppResources.url("badge-water-dispenser-" + suffix, "png") != nil)
+        }
+        state.spec = nil
+        let absent = WaterDispenserDetail(dc: DC(device: device, state: state))
+        #expect(absent.power == nil && absent.writablePower == nil && !absent.on)
+        #expect(absent.temperature == nil && absent.target == nil && absent.mode == nil && absent.childLock == nil)
+        #expect(absent.title == L("已关闭", "Off"))
+    }
+
+    @Test func waterDispenserOptionalAndReadOnlyProps() throws {
+        let model = AppModel(mock: true)
+        let device = try #require(model.devices.first { $0.did == "d42" })
+        var state = try #require(model.states[device.did])
+        state.spec = DeviceSpec.parse(["services": [["iid": 2, "type": "water-dispenser", "properties": [
+            ["iid": 1, "type": "on", "format": "bool", "access": ["read"]],
+            ["iid": 2, "type": "outlet-temperature", "format": "uint8", "access": ["read", "write"], "value-range": [25, 95, 5]],
+            ["iid": 5, "type": "child-lock", "format": "bool", "access": ["read", "write"]]
+        ]]]])
+        let detail = WaterDispenserDetail(dc: DC(device: device, state: state))
+        #expect(detail.on && detail.writablePower == nil)
+        #expect(detail.temperature?.writable == true && detail.temperature?.range == [25, 95, 5])
+        #expect(detail.target == nil && detail.mode == nil && detail.childLock?.name == "child-lock")
+        let fields = Mirror(reflecting: detail.body).children
+        #expect((fields.first { $0.label == "onPower" }?.value as? (() -> Void)) == nil)
     }
 
     @Test func bathHeaterDemoRoutingAndProps() throws {

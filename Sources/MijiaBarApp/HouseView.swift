@@ -815,7 +815,7 @@ struct HouseBadge: View {
         switch device.category {
         case .light: return Color(red: 1, green: 0.8, blue: 0.4)
         case .tv, .camera: return Color(red: 0.5, green: 0.75, blue: 1)
-        case .gateway: return device.category.color
+        case .gateway, .waterDispenser: return device.category.color
         case .ac, .fan, .airPurifier, .purifier, .dehumidifier, .humidifier, .vacuum: return Color(red: 0.55, green: 0.9, blue: 1)
         case .heater, .kitchen, .waterHeater: return Color(red: 1, green: 0.6, blue: 0.3)
         default: return Color(red: 0.55, green: 1, blue: 0.6)
@@ -979,7 +979,7 @@ enum HouseChipStyle {
         switch c { case .light: return "lightbulb.fill"; case .tv: return "tv.fill"; case .fan: return "fan.fill"; default: return c.icon }
     }
     static func tint(_ c: DeviceCategory) -> Color {
-        switch c { case .light: return .yellow; case .tv: return .indigo; case .ac: return Theme.cool; case .heater: return .orange; default: return .green }
+        switch c { case .light: return .yellow; case .tv: return .indigo; case .ac: return Theme.cool; case .heater: return .orange; case .waterDispenser: return c.color; default: return .green }
     }
 }
 

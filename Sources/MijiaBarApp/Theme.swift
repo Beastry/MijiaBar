@@ -65,6 +65,7 @@ extension DeviceCategory {
         case .gateway: return "antenna.radiowaves.left.and.right"
         case .printer: return "printer"
         case .purifier: return "drop"
+        case .waterDispenser: return "waterbottle"
         case .other: return "square.grid.2x2"
         case .airPurifier: return "air.purifier"
         case .curtain: return "curtains.closed"
@@ -94,6 +95,7 @@ extension DeviceCategory {
         case .gateway: return Color(red: 0.35, green: 0.48, blue: 0.86)
         case .printer: return .blue
         case .purifier: return .blue
+        case .waterDispenser: return Color(red: 0.20, green: 0.58, blue: 0.72)
         case .other: return .indigo
         case .airPurifier: return .cyan
         case .curtain: return .brown
@@ -155,7 +157,7 @@ func zhName(_ name: String, fallback: String) -> String {
         return fallback.isEmpty ? name : fallback
     }
     let m = ["on": "开关", "mode": "模式", "brightness": "亮度", "color-temperature": "色温", "color": "颜色", "target-temperature": "目标温度",
-             "temperature": "温度", "relative-humidity": "湿度", "fan-level": "风速", "horizontal-swing": "左右摆风", "vertical-swing": "上下摆风",
+             "temperature": "温度", "outlet-temperature": "出水温度", "relative-humidity": "湿度", "fan-level": "风速", "horizontal-swing": "左右摆风", "vertical-swing": "上下摆风",
              "electric-power": "功率", "power-consumption": "耗电量", "target-humidity": "目标湿度", "physical-controls-locked": "童锁",
              "alarm": "提示音", "indicator-light": "指示灯", "battery-level": "电量", "status": "状态", "fault": "故障", "speed-level": "风速档位",
              "countdown-time": "定时", "horizontal-angle": "摆风角度", "sleep-mode": "睡眠模式", "heat-level": "加热档位", "water-level": "水位",

@@ -14,6 +14,19 @@ PAL = {
     "G": (108, 192, 112), "c": (127, 224, 224), "n": (138, 90, 59),
 }
 SPRITES = {
+    "water-dispenser": """
+...kkkkkk...
+..kwwwwwwk..
+..kwccwBBk..
+..kwccwddk..
+..kwccwkkk..
+..kwccwkdwk.
+..kwccwkkwk.
+..kwccwddwk.
+..kwwwkggk..
+..kwwwwwwk..
+..kssssssk..
+...kkkkkk...""",
     "bath-heater": """
 ............
 .kkkkkkkkkk.

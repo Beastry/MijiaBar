@@ -38,6 +38,7 @@ struct TypeDetailView: View {
             else if device.form == .mfcp { MfcpDetail(dc: dc) }
             else { CookerDetail(dc: dc) }
         case .purifier: PurifierDetail(dc: dc)
+        case .waterDispenser: WaterDispenserDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
         case .dehumidifier: DehumidifierDetail(dc: dc)
         case .sensor: SensorDetail(dc: dc)
@@ -114,6 +115,7 @@ struct DeviceStatusCard: View {
         else if d.form == .mfcp { MfcpArt(cooking: false, tint: tint) }
         else { CookerArt(cooking: false, tint: tint) }
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
+    case .waterDispenser: WaterDispenserArt(on: false, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
     case .dehumidifier: DehumidifierArt(on: false, level: 0.3, tint: tint)
     case .humidifier: HumidifierArt(on: false, tint: tint)
@@ -644,6 +646,45 @@ struct KettleDetail: View {
             }
             if let target = dc.p("target-temperature"), target.writable, target.range != nil {
                 PropSlider(dc: dc, prop: target, colors: [tint.opacity(0.3), tint], enabled: d.isOnline)
+            }
+        }
+    }
+}
+
+// MARK: 饮水机
+struct WaterDispenserDetail: View {
+    @EnvironmentObject var model: AppModel
+    let dc: DC
+    var power: SpecProperty? { dc.p("on", in: "water-dispenser") ?? dc.p("on") }
+    var writablePower: SpecProperty? { power.flatMap { $0.writable && $0.format == "bool" ? $0 : nil } }
+    var temperature: SpecProperty? { dc.p("outlet-temperature") ?? dc.p("temperature") }
+    var target: SpecProperty? { dc.p("target-temperature") }
+    var mode: SpecProperty? { dc.p("mode") }
+    var childLock: SpecProperty? { dc.p("physical-controls-locked") ?? dc.p("child-lock") }
+    var temperatureLabel: String { temperature?.name == "outlet-temperature" ? L("出水温度", "Outlet temperature") : L("温度", "Temperature") }
+    var on: Bool { dc.bool(power) ?? false }
+    var title: String { on ? L("已开启", "On") : L("已关闭", "Off") }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on, title: title, subtitle: L("饮水机", "Water dispenser"),
+                  powerOn: dc.bool(power), onPower: writablePower.map { prop in { model.write(device, prop.key, .bool(!on)) } }) {
+            WaterDispenserArt(on: on, tint: tint)
+        } content: {
+            if let reading = temperature ?? target {
+                BigValue(value: dc.num(reading).map { "\(Int($0))" }, unit: "°C", caption: temperature == nil ? L("目标温度", "Target temperature") : temperatureLabel)
+            }
+            ReadoutRow(items: [("drop", dc.text(dc.p("tds-out") ?? dc.p("tds")).map { "TDS " + $0 + " ppm" }),
+                               ("waterbottle", dc.p("water-level").flatMap { prop in dc.text(prop).map { L("水位", "Water level") + " " + $0 + unitText(prop) } })], tint: tint)
+            HStack(spacing: 8) {
+                PropTile(dc: dc, prop: target, title: L("目标温度", "Target temperature"), icon: "thermometer.medium", tint: tint)
+                if let temperature, temperature.writable {
+                    PropTile(dc: dc, prop: temperature, title: temperatureLabel, icon: "thermometer.medium", tint: tint)
+                }
+                PropTile(dc: dc, prop: mode, title: L("模式", "Mode"), icon: "slider.horizontal.3", tint: tint)
+                PropTile(dc: dc, prop: childLock, title: L("童锁", "Child lock"), icon: "lock", tint: tint)
+            }
+            ForEach([target, temperature].compactMap { $0 }.filter { $0.writable && $0.range != nil && $0.options?.isEmpty != false }, id: \.key) { prop in
+                PropSlider(dc: dc, prop: prop, colors: [tint.opacity(0.3), tint], enabled: device.isOnline)
             }
         }
     }

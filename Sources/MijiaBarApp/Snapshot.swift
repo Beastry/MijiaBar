@@ -56,6 +56,7 @@ extension AppModel {
             dev("d39", L("燃气传感器", "Gas sensor"), "lumi.sensor_natgas.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d40", L("网关", "Gateway"), "lumi.gateway.demo", L("客厅", "Living room"), home: "h2"),
             dev("d41", L("浴霸", "Bath heater"), "yeelink.bhf_light.demo", L("浴室", "Bathroom"), home: "h2"),
+            dev("d42", L("饮水机", "Water dispenser"), "yunmi.ysj.demo", L("厨房", "Kitchen"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -143,6 +144,14 @@ extension AppModel {
             S(2, "light", [P(2, 1, "on", "bool"), P(2, 2, "brightness", "uint8", range: [1, 100, 1], unit: "percentage")]),
             S(3, "ptc-bath-heater", [P(3, 1, "heating", "bool"), P(3, 2, "ventilation", "bool")])])
         states["d41"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(80), "3.1": .bool(true), "3.2": .bool(false)], spec: bathHeater, legacy: false, source: "cloud")
+        let waterDispenser = DeviceSpec(type: "urn:miot-spec-v2:device:water-dispenser:0", description: "Water dispenser", services: [
+            S(2, "water-dispenser", [P(2, 1, "on", "bool"),
+                P(2, 2, "outlet-temperature", "uint8", ["read", "notify"], range: [0, 100, 1], unit: "celsius"),
+                P(2, 3, "target-temperature", "uint8", range: [25, 95, 5], unit: "celsius"),
+                P(2, 4, "mode", "uint8", opts: [ValueOption(value: 0, description: "Normal"), ValueOption(value: 1, description: "Hot")]),
+                P(2, 5, "physical-controls-locked", "bool"),
+                P(2, 6, "water-level", "uint8", ["read", "notify"], range: [0, 100, 1], unit: "percentage")])])
+        states["d42"] = DeviceState(values: ["2.1": .bool(true), "2.2": .int(45), "2.3": .int(45), "2.4": .int(0), "2.5": .bool(true), "2.6": .int(75)], spec: waterDispenser, legacy: false, source: "cloud")
         let humidifier = DeviceSpec(type: "", description: "", services: [S(2, "humidifier", [
             P(2, 1, "on", "bool"), P(2, 2, "target-humidity", "uint8", range: [30, 80, 5], unit: "percentage"),
             P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Manual")]),
@@ -282,6 +291,7 @@ struct ArtGallery: View {
             ("clock", AnyView(ClockArt(on: true, tint: DeviceCategory.clock.color)), AnyView(ClockArt(on: false, tint: DeviceCategory.clock.color))),
             ("gateway", AnyView(GatewayArt(on: true, tint: DeviceCategory.gateway.color)), AnyView(GatewayArt(on: false, tint: DeviceCategory.gateway.color))),
             ("bath-heater", AnyView(BathHeaterArt(on: true, tint: DeviceCategory.bathHeater.color)), AnyView(BathHeaterArt(on: false, tint: DeviceCategory.bathHeater.color))),
+            ("water-dispenser", AnyView(WaterDispenserArt(on: true, tint: DeviceCategory.waterDispenser.color)), AnyView(WaterDispenserArt(on: false, tint: DeviceCategory.waterDispenser.color))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -385,7 +395,7 @@ enum Snapshot {
             m.page = .list
             render(root, out.appendingPathComponent("warmup.png")); wait(10)
             var picks: [Device] = []
-            for c in [DeviceCategory.ac, .light, .plug, .fan, .sensor, .heater, .dehumidifier, .humidifier, .vacuum, .speaker, .camera, .tv, .printer, .purifier, .airPurifier, .other, .kitchen] {
+            for c in [DeviceCategory.ac, .light, .plug, .fan, .sensor, .heater, .dehumidifier, .humidifier, .vacuum, .speaker, .camera, .tv, .printer, .purifier, .waterDispenser, .airPurifier, .other, .kitchen] {
                 if let d = m.devices.first(where: { $0.category == c && $0.isOnline && $0.homeId == m.currentHomeId }) ?? m.devices.first(where: { $0.category == c && $0.isOnline }) ?? m.devices.first(where: { $0.category == c }) { picks.append(d) }
             }
             for d in picks where m.states[d.did] == nil {
@@ -512,6 +522,9 @@ enum Snapshot {
             m.states["d41"]?.values["2.1"] = .bool(false); m.states["d41"]?.values["3.1"] = .bool(false)
             render(root, f("bath-heater-idle"))
             m.states["d41"]?.values["2.1"] = .bool(true); m.states["d41"]?.values["3.1"] = .bool(true)
+            m.page = .detail("d42"); render(root, f("water-dispenser"))
+            m.states["d42"]?.values["2.1"] = .bool(false); render(root, f("water-dispenser-idle"))
+            m.states["d42"]?.values["2.1"] = .bool(true)
             m.states["d34"]?.values["2.1"] = .bool(true)
             m.page = .detail("d25"); render(root, f("purifier"))
             m.page = .detail("d26"); render(root, f("motion"))

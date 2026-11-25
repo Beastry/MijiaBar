@@ -1001,6 +1001,42 @@ struct KettleArt: View {
     }
 }
 
+struct WaterDispenserArt: View {
+    let on: Bool, tint: Color
+    var body: some View {
+        PowerTimeline(on: on) { _, power in
+            ZStack {
+                Ambient(tint, power * 0.6, width: 190, height: 120).position(x: 100, y: 70)
+                RoundedRectangle(cornerRadius: 13, style: .continuous).appliance(tint, power)
+                    .frame(width: 86, height: 120).position(x: 100, y: 66)
+                RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.14))
+                    .frame(width: 27, height: 91).position(x: 76, y: 65)
+                RoundedRectangle(cornerRadius: 5).fill(LinearGradient(colors: [tint.opacity(0.12 + 0.18 * power), tint.opacity(0.2 + 0.5 * power)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 23, height: 64).position(x: 76, y: 76)
+                RoundedRectangle(cornerRadius: 6).stroke(.white.opacity(0.55), lineWidth: 1)
+                    .frame(width: 27, height: 91).position(x: 76, y: 65)
+                RoundedRectangle(cornerRadius: 3).fill(Color.black.opacity(0.65))
+                    .frame(width: 32, height: 17).position(x: 116, y: 32)
+                RoundedRectangle(cornerRadius: 2).fill(tint.opacity(0.9 * power))
+                    .frame(width: 24, height: 9).position(x: 116, y: 32)
+                    .shadow(color: tint.opacity(0.5 * power), radius: 4)
+                RoundedRectangle(cornerRadius: 5).fill(Color.black.opacity(0.23))
+                    .frame(width: 35, height: 55).position(x: 116, y: 80)
+                Path { path in
+                    path.move(to: CGPoint(x: 110, y: 54)); path.addLine(to: CGPoint(x: 122, y: 54))
+                    path.addLine(to: CGPoint(x: 122, y: 65))
+                }.stroke(aluminum, style: StrokeStyle(lineWidth: 6, lineCap: .round, lineJoin: .round))
+                RoundedRectangle(cornerRadius: 2).fill(aluminum).frame(width: 34, height: 5).position(x: 116, y: 108)
+                ForEach(0..<4) { index in
+                    Rectangle().fill(Color.black.opacity(0.22)).frame(width: 1, height: 3)
+                        .position(x: CGFloat(106 + index * 6), y: 108)
+                }
+                RoundedRectangle(cornerRadius: 3).fill(aluminum).frame(width: 72, height: 6).position(x: 100, y: 126)
+            }.frame(width: 200, height: 136)
+        }
+    }
+}
+
 /// 净水器：白色亮面主机 + 一块显示滤芯寿命的玻璃窗，旁边是铝质鹅颈龙头。
 /// 滤芯余量用设备色液位表示；不知道是否在出水，所以不画水流。
 struct PurifierArt: View {

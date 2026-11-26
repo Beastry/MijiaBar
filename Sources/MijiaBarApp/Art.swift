@@ -1001,6 +1001,32 @@ struct KettleArt: View {
     }
 }
 
+struct AirMonitorArt: View {
+    let on: Bool, tint: Color
+    var reading: String? = nil
+    var label = "PM2.5"
+    var body: some View {
+        PowerTimeline(on: on) { _, power in
+            ZStack {
+                Ambient(tint, power * 0.4, width: 160, height: 100).position(x: 100, y: 76)
+                RoundedRectangle(cornerRadius: 12, style: .continuous).appliance(tint, power)
+                    .frame(width: 96, height: 102).position(x: 100, y: 70)
+                RoundedRectangle(cornerRadius: 5).fill(Color.black.opacity(0.78))
+                    .frame(width: 76, height: 49).position(x: 100, y: 62)
+                VStack(spacing: 1) {
+                    Text(label).font(.system(size: 8, weight: .medium, design: .monospaced))
+                    Text(reading ?? "—").font(.system(size: 22, weight: .medium, design: .monospaced)).monospacedDigit()
+                }.foregroundStyle(tint).opacity(power).position(x: 100, y: 62)
+                ForEach(0..<7) { index in
+                    RoundedRectangle(cornerRadius: 1).fill(aluminum).frame(width: 3, height: 9)
+                        .position(x: CGFloat(76 + index * 8), y: 102)
+                }
+                RoundedRectangle(cornerRadius: 3).fill(aluminum).frame(width: 70, height: 5).position(x: 100, y: 121)
+            }.frame(width: 200, height: 136)
+        }
+    }
+}
+
 struct WaterDispenserArt: View {
     let on: Bool, tint: Color
     var body: some View {

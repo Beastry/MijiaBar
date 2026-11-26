@@ -9,14 +9,99 @@ import MijiaCore
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
                                 (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"), (.gateway, "gateway"), (.bathHeater, "bath-heater"),
-                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier"), (.waterDispenser, "water-dispenser")] {
+                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier"), (.waterDispenser, "water-dispenser"), (.airMonitor, "air-monitor")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 40)
+        #expect(ArtGallery.rows.count == 41)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func airMonitorDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        var device = try #require(model.devices.first { $0.did == "d43" })
+        let state = try #require(model.states[device.did])
+        #expect(device.category == .airMonitor && device.category.rawValue == "air-monitor")
+        #expect(device.model == "cgllc.airmonitor.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("客厅", "Living room"))
+        #expect(device.icon == "aqi.medium" && zhCategory(device.category) == L("空气检测仪", "Air monitor"))
+        #expect(device.category.color == Color(red: 0.32, green: 0.64, blue: 0.48))
+        #expect(HouseCatalog.deviceClass(category: device.category) == .badge)
+        #expect(HouseChipStyle.tint(device.category) == device.category.color)
+        #expect(state.spec?.type == "urn:miot-spec-v2:device:air-monitor:0")
+        #expect(model.powerInfo(device) == nil)
+        let context = DC(device: device, state: state)
+        #expect(context.num(context.p("temperature")) == 24.6 && context.num(context.p("relative-humidity")) == 48)
+        #expect(context.num(context.p("co2-density")) == 620 && context.num(context.p("tvoc-density")) == 0.12)
+        #expect(context.num(context.p("battery-level")) == 86)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> AirMonitorArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        for online in [true, false] {
+            device.isOnline = online
+            let detail = AirMonitorDetail(dc: DC(device: device, state: state))
+            #expect(detail.on == online && detail.title == (online ? L("监测中", "Monitoring") : L("离线", "Offline")))
+            #expect(detail.reading?.name == "pm2.5-density" && detail.readingUnit == "µg/m³")
+            #expect(detail.dc.num(detail.reading) == 12 && detail.screen == nil)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: AirMonitorDetail.self))
+            #expect(!contains(routed, type: DeviceCardView.self) && !contains(routed, type: AirPurifierDetail.self) && !contains(routed, type: SensorDetail.self))
+            #expect(contains(detail.body, type: AirMonitorArt.self))
+            #expect(!contains(detail.body, type: GenericArt.self) && !contains(detail.body, type: AirPurifierArt.self) && !contains(detail.body, type: ThermoArt.self))
+            let fields = Mirror(reflecting: detail.body).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> AirMonitorArt)
+            #expect(art().on == online && art().reading == "12" && art().tint == device.category.color)
+            #expect(fields.first { $0.label == "powerOn" }?.value as? Bool == nil)
+            #expect(!(fields.first { $0.label == "onPower" }?.value is () -> Void))
+        }
+        #expect(contains(offArt(device, tint: device.category.color), type: AirMonitorArt.self))
+        let purifier = try #require(model.devices.first { $0.did == "d21" })
+        let sensor = try #require(model.devices.first { $0.did == "d6" })
+        #expect(purifier.category == .airPurifier && sensor.category == .sensor)
+        #expect(contains(TypeDetailView(device: purifier, state: try #require(model.states["d21"])).body, type: AirPurifierDetail.self))
+        #expect(contains(TypeDetailView(device: sensor, state: try #require(model.states["d6"])).body, type: SensorDetail.self))
+    }
+
+    @Test func airMonitorPrimaryReadingFallbacks() {
+        let device = Device(did: "demo", name: "Demo", model: "cgllc.airmonitor.demo", isOnline: true)
+        let names = ["pm2.5-density", "co2-density", "air-quality-index", "air-quality", "temperature"]
+        for index in names.indices {
+            let properties: [[String: Any]] = names[index...].enumerated().map { offset, name in
+                ["iid": offset + 1, "type": name, "format": "float", "access": ["read"]]
+            }
+            let spec = DeviceSpec.parse(["services": [["iid": 2, "type": "air-monitor", "properties": properties]]])
+            let detail = AirMonitorDetail(dc: DC(device: device, state: DeviceState(values: [:], spec: spec, legacy: false, source: "cloud")))
+            #expect(detail.reading?.name == names[index])
+            #expect(detail.readingUnit == ["µg/m³", "ppm", "", "", "°C"][index])
+            #expect(primarySliderProp(detail.dc) == nil)
+        }
+    }
+
+    @Test func airMonitorOptionalScreenAndMissingSpec() {
+        let device = Device(did: "demo", name: "Demo", model: "cgllc.airmonitor.demo", isOnline: true)
+        let empty = AirMonitorDetail(dc: DC(device: device, state: DeviceState(values: [:], spec: nil, legacy: false, source: "cloud")))
+        #expect(empty.reading == nil && empty.screen == nil && empty.on)
+        #expect(empty.readout("temperature", L("温度", "Temperature"), "°C") == nil)
+        for access in [["read"], ["read", "write"]] {
+            let spec = DeviceSpec.parse(["services": [["iid": 2, "type": "screen", "properties": [
+                ["iid": 1, "type": "on", "format": "bool", "access": access]
+            ]], ["iid": 3, "type": "air-monitor", "properties": [
+                ["iid": 1, "type": "pm10-density", "format": "float", "access": ["read"]]
+            ]]]])
+            for screenOn in [true, false] {
+                let state = DeviceState(values: ["2.1": .bool(screenOn), "3.1": .int(18)], spec: spec, legacy: false, source: "cloud")
+                let detail = AirMonitorDetail(dc: DC(device: device, state: state))
+                #expect(detail.screen?.key == "2.1" && detail.on == screenOn)
+                #expect(detail.title == L("监测中", "Monitoring"))
+                #expect(detail.readout("pm10-density", "PM10", " µg/m³") == "PM10 18 µg/m³")
+                let fields = Mirror(reflecting: detail.body).children
+                #expect(fields.first { $0.label == "powerOn" }?.value as? Bool == nil)
+                #expect(!(fields.first { $0.label == "onPower" }?.value is () -> Void))
+            }
+        }
     }
 
     @Test func waterDispenserDemoRoutingAndProps() throws {

@@ -39,6 +39,7 @@ struct TypeDetailView: View {
             else { CookerDetail(dc: dc) }
         case .purifier: PurifierDetail(dc: dc)
         case .waterDispenser: WaterDispenserDetail(dc: dc)
+        case .airMonitor: AirMonitorDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
         case .dehumidifier: DehumidifierDetail(dc: dc)
         case .sensor: SensorDetail(dc: dc)
@@ -116,6 +117,7 @@ struct DeviceStatusCard: View {
         else { CookerArt(cooking: false, tint: tint) }
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
     case .waterDispenser: WaterDispenserArt(on: false, tint: tint)
+    case .airMonitor: AirMonitorArt(on: false, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
     case .dehumidifier: DehumidifierArt(on: false, level: 0.3, tint: tint)
     case .humidifier: HumidifierArt(on: false, tint: tint)
@@ -651,7 +653,46 @@ struct KettleDetail: View {
     }
 }
 
-// MARK: 饮水机
+// MARK: 空气检测仪
+struct AirMonitorDetail: View {
+    let dc: DC
+    var reading: SpecProperty? { dc.p("pm2.5-density") ?? dc.p("co2-density") ?? dc.p("air-quality-index") ?? dc.p("air-quality") ?? dc.p("temperature") }
+    var screen: SpecProperty? { dc.p("on", in: "screen") }
+    var on: Bool { dc.device.isOnline && (dc.bool(screen) ?? true) }
+    var title: String { dc.device.isOnline ? L("监测中", "Monitoring") : L("离线", "Offline") }
+    var readingCaption: String { reading?.name == "co2-density" ? "CO₂" : reading.map { dc.label($0) } ?? L("空气质量指数", "Air quality index") }
+    var readingUnit: String {
+        switch reading?.name {
+        case "pm2.5-density": return "µg/m³"
+        case "co2-density": return "ppm"
+        case "temperature": return "°C"
+        default: return ""
+        }
+    }
+    func readout(_ name: String, _ label: String, _ unit: String) -> String? {
+        dc.num(dc.p(name)).map { label + " " + fmt1($0) + unit }
+    }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: device.isOnline, title: title, subtitle: L("空气检测仪", "Air monitor")) {
+            AirMonitorArt(on: on, tint: tint, reading: dc.num(dc.p("pm2.5-density") ?? dc.p("air-quality-index") ?? dc.p("air-quality")).map { fmt1($0) },
+                          label: dc.p("pm2.5-density") != nil ? "PM2.5" : "AQI")
+        } content: {
+            BigValue(value: dc.num(reading).map { fmt1($0) }, unit: readingUnit,
+                     caption: readingCaption, dim: !device.isOnline)
+            ReadoutRow(items: [("thermometer.medium", readout("temperature", L("温度", "Temperature"), "°C")),
+                               ("humidity.fill", readout("relative-humidity", L("湿度", "Humidity"), "%")),
+                               ("aqi.medium", readout("co2-density", "CO₂", " ppm"))], tint: tint)
+            ReadoutRow(items: [("aqi.medium", readout("tvoc-density", "TVOC", dc.p("tvoc-density").map { " " + unitText($0) } ?? "")),
+                               ("aqi.medium", readout("pm10-density", "PM10", " µg/m³")),
+                               ("battery.75percent", readout("battery-level", L("电量", "Battery"), "%"))], tint: tint)
+            if let screen, screen.format == "bool", screen.writable {
+                PropTile(dc: dc, prop: screen, title: L("屏幕", "Screen"), icon: "display", tint: tint)
+            }
+        }
+    }
+}
+
 struct WaterDispenserDetail: View {
     @EnvironmentObject var model: AppModel
     let dc: DC

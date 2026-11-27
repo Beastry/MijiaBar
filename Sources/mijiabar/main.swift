@@ -33,20 +33,12 @@ let policy = AgentPolicy.load()
 @MainActor func devices(refresh: Bool = false) async throws -> [Device] {
     if !refresh, let c = DeviceCache.load(), !c.devices.isEmpty { return c.devices }
     guard let cloud = controller.cloud else { throw CloudError.notLoggedIn }
-    let hs = try await cloud.homes(); var all: [Device] = []
-    for h in hs { for d in try await cloud.devices(in: h) where !all.contains(where: { $0.did == d.did }) { all.append(d) } }
+    let (hs, all) = try await cloud.homesAndDevices()
     DeviceCache(homes: hs, devices: all, updated: Date()).save()
     return all
 }
 
-@MainActor func resolve(_ q: String) async throws -> Device {
-    let ds = try await devices()
-    if let d = ds.first(where: { $0.did == q }) { return d }
-    if let d = ds.first(where: { prefs.name($0) == q || $0.name == q }) { return d }
-    let m = ds.filter { prefs.name($0).localizedCaseInsensitiveContains(q) }
-    if m.count == 1 { return m[0] }
-    throw MijiaError.deviceNotFound(q + (m.count > 1 ? L("（匹配到多个：", " (ambiguous: ") + m.map { prefs.name($0) }.joined(separator: ", ") + ")" : ""))
-}
+@MainActor func resolve(_ q: String) async throws -> Device { try matchDevice(q, in: try await devices(), name: prefs.name) }
 
 @MainActor func deviceInfo(_ d: Device) -> [String: Any] {
     var o: [String: Any] = ["did": d.did, "name": prefs.name(d), "model": d.model, "online": d.isOnline,
@@ -131,7 +123,7 @@ func confirm(_ msg: String) -> Bool {
 @MainActor func setProperty(_ q: String, _ prop: String, _ value: PropValue) async throws -> [String: Any] {
     let d = try await resolve(q)
     let (key, format) = try await resolveKey(d, prop)
-    let v = format.map { value.coerced(to: $0) } ?? value
+    let v = try format.map { try value.strictlyCoerced(to: $0) } ?? value
     try checkWrite(d, "\(prop) = \(v)")
     try await controller.set(d, key: key, value: v)
     return ["ok": true, "device": prefs.name(d), "key": key, "value": v.any]
@@ -166,7 +158,7 @@ let mcpTools: [[String: Any]] = [
     case "list_devices": return try await listDevices(all: a["include_hidden"] as? Bool ?? false, refresh: a["refresh"] as? Bool ?? false)
     case "get_device_state": return try await getState(anyString(a["device"]))
     case "set_property": return try await setProperty(anyString(a["device"]), anyString(a["property"]), PropValue(a["value"]))
-    case "run_action": return try await runAction(anyString(a["device"]), anyString(a["action"]), (a["params"] as? [Any] ?? []).map { PropValue($0) })
+    case "run_action": return try await runAction(anyString(a["device"]), anyString(a["action"]), try parseActionInputs(a["params"]))
     default:
         if let r = try await callHouseTool(name, a) { return r }
         throw MijiaError.unknownProperty(name)
@@ -231,13 +223,10 @@ do {
     case "set": guard args.count >= 4 else { fail(usage) }; print(json(try await setProperty(args[1], args[2], PropValue.parse(args[3]))))
     case "action":
         guard args.count >= 3 else { fail(usage) }
-        let ins = (args.count > 3 ? (try? JSONSerialization.jsonObject(with: Data(args[3].utf8))) as? [Any] ?? [] : []).map { PropValue($0) }
-        print(json(try await runAction(args[1], args[2], ins)))
+        print(json(try await runAction(args[1], args[2], try parseActionInputs(args.count > 3 ? args[3] : nil))))
     case "house": try await houseCommand(Array(args.dropFirst()))
     case "mcp": await mcp()
-    case "setup-prompt":
-        let me = selfURL.path
-        print(agentSetupPrompt(cli: me.contains(".app/") ? me : "/Applications/MijiaBar.app/Contents/Resources/bin/mijiabar"))
+    // setup-prompt 在文件开头处理（不读钥匙串），到不了这里
     case "lan-get":
         guard let ip = opt(args, "--ip"), let tk = opt(args, "--token") else { fail(usage) }
         let model = opt(args, "--model") ?? "lumi.acpartner.mcn02"

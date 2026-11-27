@@ -1,5 +1,8 @@
+<p align="center"><img src="docs/assets/icon.png" width="96" alt="MijiaBar"></p>
 <h1 align="center">MijiaBar</h1>
 <p align="center">在 macOS 菜单栏控制米家设备，也可以交给 AI Agent 来控制。</p>
+
+<p align="center"><a href="https://www.neardws.com/MijiaBar/zh-CN.html">官网</a> · <a href="https://github.com/neardws/MijiaBar/releases/latest">下载</a> · <a href="docs/AGENT_SETUP.zh-CN.md">Agent 安装指南</a> · <a href="docs/HOUSE.md">小屋配置</a></p>
 
 <p align="center">
   <a href="https://github.com/neardws/MijiaBar/releases/latest"><img src="https://img.shields.io/github/v/release/neardws/MijiaBar?label=release&color=blue" alt="Release"></a>
@@ -16,9 +19,9 @@
 
 > 非小米官方项目。使用与米家 App 相同的云端接口和局域网 miIO 协议。
 
-<p align="center"><img src="https://files.neardws.com/mijiabar/readme/demo.gif" width="300" alt="demo"></p>
+<p align="center"><img src="https://files.neardws.com/mijiabar/readme/demo.gif" width="300" alt="演示动画：空调卡片"></p>
 
-[功能](#功能) · [截图](#截图) · [安装](#安装) · [登录](#登录) · [默认隐藏规则](#默认隐藏规则) · [摄像头直播](#摄像头直播) · [Agent / MCP](#agent--mcp) · [从源码构建](#从源码构建) · [数据存放](#数据存放) · [致谢](#致谢) · [许可证](#许可证)
+[功能](#功能) · [截图](#截图) · [安装](#安装) · [登录](#登录) · [默认隐藏规则](#默认隐藏规则) · [云端与局域网](#云端与局域网) · [摄像头直播](#摄像头直播) · [Agent / MCP](#agent--mcp) · [从源码构建](#从源码构建) · [数据存放](#数据存放) · [致谢](#致谢) · [许可证](#许可证)
 
 ## 功能
 
@@ -37,19 +40,19 @@
 ## 截图
 
 <p align="center">
-  <img src="https://files.neardws.com/mijiabar/readme/list-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/ac-cool-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/fan-light.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/list-light.webp" width="260" alt="设备列表">
+  <img src="https://files.neardws.com/mijiabar/readme/ac-cool-light.webp" width="260" alt="空调卡片（制冷）">
+  <img src="https://files.neardws.com/mijiabar/readme/fan-light.webp" width="260" alt="风扇卡片">
 </p>
 <p align="center"><b>深色模式</b><br>
-  <img src="https://files.neardws.com/mijiabar/readme/list-dark.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/ac-heat-dark.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/light-dark.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/list-dark.webp" width="260" alt="深色模式下的设备列表">
+  <img src="https://files.neardws.com/mijiabar/readme/ac-heat-dark.webp" width="260" alt="深色模式下的空调卡片（制热）">
+  <img src="https://files.neardws.com/mijiabar/readme/light-dark.webp" width="260" alt="深色模式下的灯卡片">
 </p>
 <p align="center">
-  <img src="https://files.neardws.com/mijiabar/readme/plug-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/agent-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/login-light.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/plug-light.webp" width="260" alt="智能插座卡片">
+  <img src="https://files.neardws.com/mijiabar/readme/agent-light.webp" width="260" alt="Agent 接口设置">
+  <img src="https://files.neardws.com/mijiabar/readme/login-light.webp" width="260" alt="扫码登录界面">
 </p>
 
 ## 安装
@@ -76,18 +79,21 @@
 
 点眼睛按钮或「显示」可以展开，也可以在 **设置 → 设备管理 → 显示已隐藏的设备** 中打开。右键设备可以手动「隐藏 / 取消隐藏」，手动设置始终优先于自动规则。
 
+## 云端与局域网
+
+- 设备详情页标题（以及列表行上的小图标）显示最近一次读取/控制走的通道：**局域网**（miIO 直连）、**云端**（回退）或 **蓝牙网关**。
+- 离家检测：比较 Mac 当前网卡子网和设备的局域网 IP（网络变化时重新判断，不保存任何网络信息）。不在家时跳过局域网直接走云端，摄像头卡片提示只能在家里看直播。
+
 ## 摄像头直播
 
 - 摄像机和门铃的详情卡片里有 **看直播** 按钮：画面直接在卡片里播放，点放大按钮可以弹出可调整大小的独立窗口。
 - 播放由内置的 [go2rtc](https://github.com/AlexxIT/go2rtc)（MIT，官方发布包，构建时校验 SHA-256）完成，只在观看时运行：只监听 `127.0.0.1` 的随机端口，关闭 RTSP / WebRTC / HomeKit（mDNS），只开放播放器和 `/api/ws`；关闭画面 20 秒后停止，完全退出 MijiaBar 时结束。
 - 登录复用扫码会话：MijiaBar 把扫码登录返回的 `passToken` 存在钥匙串，通过临时的 `go2rtc.yaml`（权限 600，go2rtc 读入后立即删除）交给 go2rtc。v0.1.8 之前的登录需要再扫一次码（**设置 → 摄像头直播**）。
 - 每次连接都会向小米云获取密钥，视频经小米 P2P 从摄像头传来，不做任何录制。电池门铃会被唤醒、耗电更快，请尽量短时间观看。Agent / MCP 无法访问摄像头。
-- 设备详情页标题（以及列表行上的小图标）显示最近一次读取/控制走的通道：**局域网**（miIO 直连）、**云端**（回退）或 **蓝牙网关**。
-- 离家检测：比较 Mac 当前网卡子网和设备的局域网 IP（网络变化时重新判断，不保存任何网络信息）。不在家时跳过局域网直接走云端，摄像头卡片提示只能在家里看直播。
 
 <p align="center">
-  <img src="https://files.neardws.com/mijiabar/readme/camera-live-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/doorbell-live-dark.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/camera-live-light.webp" width="260" alt="摄像机直播">
+  <img src="https://files.neardws.com/mijiabar/readme/doorbell-live-dark.webp" width="260" alt="深色模式下的门铃直播">
 </p>
 
 ## Agent / MCP
@@ -104,7 +110,7 @@ CLI 路径：/Applications/MijiaBar.app/Contents/Resources/bin/mijiabar
 
 ### 权限
 
-| | |
+| 模式 | Agent 能做什么 |
 | --- | --- |
 | 关闭 | Agent 什么都不能做 |
 | 只读（默认） | 只能列设备、读状态 |
@@ -116,34 +122,38 @@ CLI 路径：/Applications/MijiaBar.app/Contents/Resources/bin/mijiabar
 ### 命令行
 
 ```bash
-mijiabar list                     # list devices (--all, --refresh)
+mijiabar list                     # list devices (--all, --refresh, --json)
 mijiabar get <device>             # read state as JSON
 mijiabar set <device> <prop> <value>
 mijiabar action <device> <action> [JSON array]
+mijiabar house <subcommand>       # house layout, pets and decor (see: mijiabar house help)
 mijiabar mcp                      # stdio MCP server
 mijiabar setup-prompt             # print the agent setup instructions
 ```
 
-MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`。
+MCP 工具：`list_devices`、`get_device_state`、`set_property`、`run_action`，以及只调整小屋、不控制设备的 `get_house*` / `set_house*`（见 [docs/HOUSE.md](docs/HOUSE.md)）。
 
 ## 从源码构建
 
 ```bash
 git clone https://github.com/neardws/MijiaBar && cd MijiaBar
 swift build
-.build/debug/MijiaBarApp --snapshot docs/screenshots   # demo-data screenshots
+scripts/test.sh                                  # unit tests
+.build/debug/MijiaBarApp --snapshot /tmp/shots   # every screen with demo data, light and dark
 scripts/package.sh   # dist/MijiaBar.app + DMG (signs & notarizes when a Developer ID is available)
 # env: VERSION, SIGN_IDENTITY ("-" = ad-hoc), NOTARY_PROFILE (default MijiaBar-notary)
 ```
 
-项目结构：`Sources/MijiaCore`（云端 API、扫码登录、miIO、MIoT 规格）、`Sources/MijiaBarApp`（SwiftUI 应用）、`Sources/mijiabar`（CLI + MCP）。翻译在 `i18n/*.tsv`，修改后运行 `scripts/gen-i18n.py`。
+项目结构：`Sources/MijiaCore`（云端 API、扫码登录、miIO、MIoT 规格）、`Sources/MijiaBarApp`（SwiftUI 应用）、`Sources/mijiabar`（CLI + MCP）。翻译在 `i18n/*.tsv`，修改后运行 `scripts/gen-i18n.py`。贡献须知见 [AGENTS.md](AGENTS.md)，设计规范见 [docs/DESIGN.md](docs/DESIGN.md)。
 
 ## 数据存放
 
 - 登录凭据：macOS 钥匙串，服务名 `com.neardws.MijiaBar`（账户 `session`），退出登录即删除。
 - 设备缓存 `devices.json`、偏好 `prefs.json`（收藏、别名、隐藏、地区）、Agent 权限 `agent.json`、MIoT 规格缓存 `spec-index.json` 和 `specs/<型号>.json`，都在 `~/Library/Application Support/MijiaBar/`，文件权限 600。
+- 小屋布局、宠物和装饰 `house.json`：开着 iCloud 云盘时放在 iCloud 云盘的 `MijiaBar/house.json`，多台 Mac 共用；否则放在同一目录。可用 `mijiabar house sync icloud|local|<文件夹>` 换位置（见 [docs/HOUSE.md](docs/HOUSE.md)）。里面只有设备和房间 id，没有任何凭据。
+- 传感器和用电历史：`~/Library/Application Support/MijiaBar/` 下的 `history/<设备>/<指标>.json`（原始采样保留 31 天，按天汇总保留 400 天），文件权限 600，不上传。
 - 界面语言：UserDefaults 的 `MijiaBarLang`（App 和 CLI 共用，环境变量 `MIJIABAR_LANG` 可覆盖）。
-- 除了小米服务器、局域网内的设备和 miot-spec.org（下载公开规格）之外，不向任何地方发送数据。
+- 联网范围：只访问小米服务器、局域网内的设备、miot-spec.org（下载公开规格），以及用于检查和下载更新的本项目网站与 GitHub Releases。没有任何统计或埋点。
 
 ## 致谢
 

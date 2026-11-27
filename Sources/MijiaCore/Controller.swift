@@ -29,7 +29,19 @@ public enum PropValue: Codable, Hashable, Sendable, CustomStringConvertible {
         switch self { case .int(let i): return Double(i); case .double(let d): return d; case .string(let s): return Double(s); case .bool(let b): return b ? 1 : 0; case .null: return nil }
     }
     public var boolValue: Bool? {
-        switch self { case .bool(let b): return b; case .int(let i): return i != 0; case .string(let s): return ["on", "true", "1"].contains(s.lowercased()); default: return nil }
+        switch self { case .bool(let b): return b; case .int(let i): return i != 0; case .double(let d): return d != 0
+                      case .string(let s): return ["on", "true", "1"].contains(s.lowercased()); case .null: return nil }
+    }
+    /// 严格的布尔值：认不出来返回 nil（boolValue 会把任何认不出的字符串当成 false）
+    public var strictBool: Bool? {
+        switch self {
+        case .bool(let b): return b
+        case .int(let i): return i == 0 ? false : i == 1 ? true : nil
+        case .double(let d): return d == 0 ? false : d == 1 ? true : nil
+        case .string(let s):
+            switch s.lowercased() { case "on", "true", "1", "yes": return true; case "off", "false", "0", "no": return false; default: return nil }
+        case .null: return nil
+        }
     }
     public var description: String {
         switch self {
@@ -48,6 +60,15 @@ public enum PropValue: Codable, Hashable, Sendable, CustomStringConvertible {
         case "float": return doubleValue.map { .double($0) } ?? self
         case "string": return .string(description)
         default: return doubleValue.flatMap { Int(exactly: $0.rounded()) }.map { .int($0) } ?? self
+        }
+    }
+    /// 命令行 / Agent 传来的值：按 MIoT format 转换，不合法就报错。
+    /// coerced 对认不出的值很宽容（"banana" 写进 bool 属性会变成 false，等于把设备关掉），界面上的值都是自己算的才可以这样。
+    public func strictlyCoerced(to format: String) throws -> PropValue {
+        switch format {
+        case "bool": guard let b = strictBool else { throw MijiaError.badValue(description) }; return .bool(b)
+        case "string": guard self != .null else { throw MijiaError.badValue(description) }; return .string(description)
+        default: guard let d = doubleValue, d.isFinite else { throw MijiaError.badValue(description) }; return coerced(to: format)
         }
     }
     public init(from decoder: Decoder) throws {
@@ -100,8 +121,12 @@ public final class Controller: @unchecked Sendable {
     private var lastPath: String?
     private var deviceIPs: [String] = []
     private var _atHome: Bool?
-    /// 网络变化回调（App 用来刷新「在家 / 不在家」状态）
-    public var onNetworkChange: (@Sendable () -> Void)?
+    private var _onNetworkChange: (@Sendable () -> Void)?
+    /// 网络变化回调（App 用来刷新「在家 / 不在家」状态）。在网络监视队列上读、主线程上写，所以也走锁
+    public var onNetworkChange: (@Sendable () -> Void)? {
+        get { lock.withLock { _onNetworkChange } }
+        set { lock.withLock { _onNetworkChange = newValue } }
+    }
 
     /// 这台 Mac 是否在家庭局域网：任一网卡的子网包含设备列表里的某个局域网 IP。
     /// 不探测设备、不保存任何网络标识；nil 表示还不知道（没有设备 IP），此时照常尝试局域网。

@@ -1,5 +1,8 @@
+<p align="center"><img src="docs/assets/icon.png" width="96" alt="MijiaBar"></p>
 <h1 align="center">MijiaBar</h1>
 <p align="center">Control your Xiaomi Mi Home devices from the macOS menu bar — and let AI agents do it too.</p>
+
+<p align="center"><a href="https://www.neardws.com/MijiaBar/">Website</a> · <a href="https://github.com/neardws/MijiaBar/releases/latest">Download</a> · <a href="docs/AGENT_SETUP.md">Agent setup guide</a> · <a href="docs/HOUSE.md">House config</a></p>
 
 <p align="center">
   <a href="https://github.com/neardws/MijiaBar/releases/latest"><img src="https://img.shields.io/github/v/release/neardws/MijiaBar?label=release&color=blue" alt="Release"></a>
@@ -16,9 +19,9 @@
 
 > Unofficial project, not affiliated with Xiaomi. It uses the same cloud API as the Mi Home app plus the LAN miIO protocol.
 
-<p align="center"><img src="https://files.neardws.com/mijiabar/readme/demo.gif" width="300" alt="demo"></p>
+<p align="center"><img src="https://files.neardws.com/mijiabar/readme/demo.gif" width="300" alt="Animated demo of the air conditioner card"></p>
 
-[Features](#features) · [Screenshots](#screenshots) · [Install](#install) · [Sign in](#sign-in) · [Auto-hidden devices](#auto-hidden-devices) · [Live video (cameras)](#live-video-cameras) · [Agent / MCP](#agent--mcp) · [Build from source](#build-from-source) · [Where data is stored](#where-data-is-stored) · [Credits](#credits) · [License](#license)
+[Features](#features) · [Screenshots](#screenshots) · [Install](#install) · [Sign in](#sign-in) · [Auto-hidden devices](#auto-hidden-devices) · [Cloud and LAN](#cloud-and-lan) · [Live video (cameras)](#live-video-cameras) · [Agent / MCP](#agent--mcp) · [Build from source](#build-from-source) · [Where data is stored](#where-data-is-stored) · [Credits](#credits) · [License](#license)
 
 ## Features
 
@@ -37,19 +40,19 @@
 ## Screenshots
 
 <p align="center">
-  <img src="https://files.neardws.com/mijiabar/readme/list-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/ac-cool-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/fan-light.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/list-light.webp" width="260" alt="Device list">
+  <img src="https://files.neardws.com/mijiabar/readme/ac-cool-light.webp" width="260" alt="Air conditioner card, cooling">
+  <img src="https://files.neardws.com/mijiabar/readme/fan-light.webp" width="260" alt="Fan card">
 </p>
 <p align="center"><b>Dark mode</b><br>
-  <img src="https://files.neardws.com/mijiabar/readme/list-dark.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/ac-heat-dark.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/light-dark.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/list-dark.webp" width="260" alt="Device list in dark mode">
+  <img src="https://files.neardws.com/mijiabar/readme/ac-heat-dark.webp" width="260" alt="Air conditioner card, heating, in dark mode">
+  <img src="https://files.neardws.com/mijiabar/readme/light-dark.webp" width="260" alt="Light card in dark mode">
 </p>
 <p align="center">
-  <img src="https://files.neardws.com/mijiabar/readme/plug-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/agent-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/login-light.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/plug-light.webp" width="260" alt="Smart plug card">
+  <img src="https://files.neardws.com/mijiabar/readme/agent-light.webp" width="260" alt="Agent interface settings">
+  <img src="https://files.neardws.com/mijiabar/readme/login-light.webp" width="260" alt="QR sign-in screen">
 </p>
 
 ## Install
@@ -76,18 +79,21 @@ A device is collapsed to the bottom of the list by default when either is true:
 
 Click the eye button or **Show** to reveal them, or turn on **Settings → Devices → Show hidden devices**. Right-click a device to hide / unhide it manually — a manual choice always overrides the automatic rule.
 
+## Cloud and LAN
+
+- Each device's detail header (and, subtly, its list row) shows which path the last read/control used: **LAN** (direct miIO), **Cloud** (fallback) or **BLE gateway**.
+- Away-from-home detection: MijiaBar compares the Mac's network subnets with the devices' local IPs (re-checked on every network change, nothing stored). When you're away it skips LAN attempts and goes straight to the cloud, and camera cards say live view is only available at home.
+
 ## Live video (cameras)
 
 - Camera and doorbell detail cards have a **Watch live** button: the video plays inline in the card, and the enlarge button pops it out into a resizable window.
 - It uses the bundled [go2rtc](https://github.com/AlexxIT/go2rtc) (MIT, official release, SHA-256 verified at build time) as a helper that only runs while you watch: it listens on `127.0.0.1` on a random port, has RTSP / WebRTC / HomeKit (mDNS) disabled, exposes only the player and `/api/ws`, stops 20 s after the player closes and is killed when MijiaBar quits.
 - Sign-in reuses the QR session: MijiaBar keeps the `passToken` returned by the QR login in the Keychain and hands it to go2rtc via a temporary `go2rtc.yaml` (mode 600, deleted as soon as go2rtc has read it). Sessions from before v0.1.8 need one more QR scan (**Settings → Camera live view**).
 - Stream keys come from the Xiaomi cloud on every connect; video comes from the camera over Xiaomi's P2P. Nothing is recorded. Battery doorbells are woken up and drain faster, so keep it short. Agents / MCP have no camera access.
-- Each device's detail header (and, subtly, its list row) shows which path the last read/control used: **LAN** (direct miIO), **Cloud** (fallback) or **BLE gateway**.
-- Away-from-home detection: MijiaBar compares the Mac's network subnets with the devices' local IPs (re-checked on every network change, nothing stored). When you're away it skips LAN attempts and goes straight to the cloud, and camera cards say live view is only available at home.
 
 <p align="center">
-  <img src="https://files.neardws.com/mijiabar/readme/camera-live-light.webp" width="260" alt="">
-  <img src="https://files.neardws.com/mijiabar/readme/doorbell-live-dark.webp" width="260" alt="">
+  <img src="https://files.neardws.com/mijiabar/readme/camera-live-light.webp" width="260" alt="Camera live view">
+  <img src="https://files.neardws.com/mijiabar/readme/doorbell-live-dark.webp" width="260" alt="Doorbell live view in dark mode">
 </p>
 
 ## Agent / MCP
@@ -104,7 +110,7 @@ Full step-by-step instructions for agents: [docs/AGENT_SETUP.md](docs/AGENT_SETU
 
 ### Permissions
 
-| | |
+| Mode | What agents can do |
 | --- | --- |
 | Off | Agents can do nothing |
 | Read (default) | List devices and read state only |
@@ -116,34 +122,38 @@ With **Confirm every write** on, every change an agent makes shows a macOS dialo
 ### CLI
 
 ```bash
-mijiabar list                     # list devices (--all, --refresh)
+mijiabar list                     # list devices (--all, --refresh, --json)
 mijiabar get <device>             # read state as JSON
 mijiabar set <device> <prop> <value>
 mijiabar action <device> <action> [JSON array]
+mijiabar house <subcommand>       # house layout, pets and decor (see: mijiabar house help)
 mijiabar mcp                      # stdio MCP server
 mijiabar setup-prompt             # print the agent setup instructions
 ```
 
-MCP tools: `list_devices`, `get_device_state`, `set_property`, `run_action`.
+MCP tools: `list_devices`, `get_device_state`, `set_property`, `run_action`, plus `get_house*` / `set_house*` tools that only rearrange the house and never control a device ([docs/HOUSE.md](docs/HOUSE.md)).
 
 ## Build from source
 
 ```bash
 git clone https://github.com/neardws/MijiaBar && cd MijiaBar
 swift build
-.build/debug/MijiaBarApp --snapshot docs/screenshots   # demo-data screenshots
+scripts/test.sh                                  # unit tests
+.build/debug/MijiaBarApp --snapshot /tmp/shots   # every screen with demo data, light and dark
 scripts/package.sh   # dist/MijiaBar.app + DMG (signs & notarizes when a Developer ID is available)
 # env: VERSION, SIGN_IDENTITY ("-" = ad-hoc), NOTARY_PROFILE (default MijiaBar-notary)
 ```
 
-Project layout: `Sources/MijiaCore` (cloud API, QR login, miIO, MIoT spec), `Sources/MijiaBarApp` (SwiftUI app), `Sources/mijiabar` (CLI + MCP). Translations live in `i18n/*.tsv`; run `scripts/gen-i18n.py` after editing.
+Project layout: `Sources/MijiaCore` (cloud API, QR login, miIO, MIoT spec), `Sources/MijiaBarApp` (SwiftUI app), `Sources/mijiabar` (CLI + MCP). Translations live in `i18n/*.tsv`; run `scripts/gen-i18n.py` after editing. Contributor notes are in [AGENTS.md](AGENTS.md), the design guide in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Where data is stored
 
 - Sign-in session: macOS Keychain, service `com.neardws.MijiaBar` (account `session`). Signing out deletes it.
 - Device cache `devices.json`, preferences `prefs.json` (favorites, aliases, hidden flags, region), agent policy `agent.json`, and MIoT spec cache `spec-index.json` + `specs/<model>.json` — all in `~/Library/Application Support/MijiaBar/`, written with file mode 600.
+- House layout, pets and decor `house.json`: in iCloud Drive (`MijiaBar/house.json`) when iCloud Drive is on, so your Macs share it; otherwise in the same folder. `mijiabar house sync icloud|local|<folder>` moves it ([docs/HOUSE.md](docs/HOUSE.md)). It holds device and room ids, no credentials.
+- Sensor and power history: `history/<device>/<metric>.json` in `~/Library/Application Support/MijiaBar/` (raw samples for 31 days, daily summaries for 400), file mode 600, never uploaded.
 - UI language: `MijiaBarLang` in UserDefaults (shared by the app and CLI; `MIJIABAR_LANG` overrides it).
-- Nothing is sent anywhere except Xiaomi's servers, your devices on the LAN, and miot-spec.org (public spec downloads).
+- Network: MijiaBar only talks to Xiaomi's servers, your devices on the LAN, miot-spec.org (public spec downloads), and this project's site and GitHub Releases for update checks and downloads. No analytics.
 
 ## Credits
 

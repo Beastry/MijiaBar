@@ -93,10 +93,8 @@ public enum HistoryStore {
         return (try? JSONDecoder().decode(Series.self, from: d)) ?? Series()
     }
     public static func save(_ s: Series, _ did: String, _ metric: String) {
-        let u = url(did, metric)
         guard let d = try? JSONEncoder().encode(s) else { return }
-        try? d.write(to: u, options: .atomic)
-        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: u.path)
+        writePrivate(d, to: url(did, metric))
     }
     /// 删除全部本机历史
     public static func clearAll() { try? FileManager.default.removeItem(at: Paths.support.appendingPathComponent("history")) }

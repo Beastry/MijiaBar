@@ -58,6 +58,7 @@ extension AppModel {
             dev("d41", L("浴霸", "Bath heater"), "yeelink.bhf_light.demo", L("浴室", "Bathroom"), home: "h2"),
             dev("d42", L("饮水机", "Water dispenser"), "yunmi.ysj.demo", L("厨房", "Kitchen"), home: "h2"),
             dev("d43", L("空气检测仪", "Air monitor"), "cgllc.airmonitor.demo", L("客厅", "Living room"), home: "h2"),
+            dev("d44", L("体重秤", "Scale"), "yunmai.scales.demo", L("浴室", "Bathroom"), home: "h2"),
         ]
         prefs.devices["d1"] = { var p = DevicePrefs(); p.favorite = true; return p }()
         prefs.devices["d2"] = { var p = DevicePrefs(); p.favorite = true; return p }()
@@ -161,6 +162,13 @@ extension AppModel {
                 P(2, 5, "tvoc-density", "float", ["read", "notify"], unit: "mg/m³"),
                 P(2, 6, "battery-level", "uint8", ["read", "notify"], unit: "percentage")])])
         states["d43"] = DeviceState(values: ["2.1": .int(12), "2.2": .double(24.6), "2.3": .int(48), "2.4": .int(620), "2.5": .double(0.12), "2.6": .int(86)], spec: airMonitor, legacy: false, source: "cloud")
+        let scale = DeviceSpec(type: "urn:miot-spec-v2:device:scale:0", description: "Scale", services: [
+            S(2, "scale", [P(2, 1, "weight", "float", ["read", "notify"], unit: "kg"),
+                P(2, 2, "bmi", "float", ["read", "notify"]),
+                P(2, 3, "body-fat", "float", ["read", "notify"], unit: "percentage"),
+                P(2, 4, "battery-level", "uint8", ["read", "notify"], unit: "percentage"),
+                P(2, 5, "unit", "uint8", ["read", "write"], opts: [ValueOption(value: 0, description: "kg"), ValueOption(value: 1, description: "lb")])])])
+        states["d44"] = DeviceState(values: ["2.1": .double(62.4), "2.2": .double(21.6), "2.3": .double(19.8), "2.4": .int(92), "2.5": .int(0)], spec: scale, legacy: false, source: "cloud")
         let humidifier = DeviceSpec(type: "", description: "", services: [S(2, "humidifier", [
             P(2, 1, "on", "bool"), P(2, 2, "target-humidity", "uint8", range: [30, 80, 5], unit: "percentage"),
             P(2, 3, "mode", "uint8", opts: [ValueOption(value: 0, description: "Auto"), ValueOption(value: 1, description: "Manual")]),
@@ -302,6 +310,7 @@ struct ArtGallery: View {
             ("bath-heater", AnyView(BathHeaterArt(on: true, tint: DeviceCategory.bathHeater.color)), AnyView(BathHeaterArt(on: false, tint: DeviceCategory.bathHeater.color))),
             ("water-dispenser", AnyView(WaterDispenserArt(on: true, tint: DeviceCategory.waterDispenser.color)), AnyView(WaterDispenserArt(on: false, tint: DeviceCategory.waterDispenser.color))),
             ("air-monitor", AnyView(AirMonitorArt(on: true, tint: DeviceCategory.airMonitor.color, reading: "12")), AnyView(AirMonitorArt(on: false, tint: DeviceCategory.airMonitor.color))),
+            ("scale", AnyView(ScaleArt(on: true, tint: DeviceCategory.scale.color, reading: "62.4")), AnyView(ScaleArt(on: false, tint: DeviceCategory.scale.color))),
             ("camera", AnyView(CameraArt(on: true, tint: .purple)), AnyView(CameraArt(on: false, tint: .purple))),
             ("tv", AnyView(TVArt(on: true, playing: true, tint: .indigo)), AnyView(TVArt(on: false, playing: false, tint: .indigo))),
             ("speaker", AnyView(SpeakerArt(playing: true, volume: 0.6, tint: .pink)), AnyView(SpeakerArt(playing: false, volume: 0.6, tint: .pink))),
@@ -538,6 +547,11 @@ enum Snapshot {
             m.page = .detail("d43"); render(root, f("air-monitor"))
             if let index = m.devices.firstIndex(where: { $0.did == "d43" }) {
                 m.devices[index].isOnline = false; render(root, f("air-monitor-idle"))
+                m.devices[index].isOnline = true
+            }
+            m.page = .detail("d44"); render(root, f("scale"))
+            if let index = m.devices.firstIndex(where: { $0.did == "d44" }) {
+                m.devices[index].isOnline = false; render(root, f("scale-idle"))
                 m.devices[index].isOnline = true
             }
             m.states["d34"]?.values["2.1"] = .bool(true)

@@ -84,6 +84,7 @@ public enum DeviceCategory: String, Codable, CaseIterable, Sendable {
     case bathHeater = "bath-heater"
     case waterDispenser = "water-dispenser"
     case airMonitor = "air-monitor"
+    case scale = "scale"
     public static func guess(_ model: String) -> DeviceCategory {
         let m = model.lowercased()
         func has(_ s: String...) -> Bool { s.contains { m.contains($0) } }
@@ -97,6 +98,7 @@ public enum DeviceCategory: String, Codable, CaseIterable, Sendable {
         if has(".ysj.", "water-dispenser", "water_dispenser", "waterdispenser") { return .waterDispenser }
         if has("waterpuri", "water_purifier", ".wp.") { return .purifier }
         if has("airmonitor", "air-monitor", "air_monitor", ".airm.") { return .airMonitor }
+        if has(".scale.", ".scales.", ".scale_", "bodyfat", "body-fat", "body_fat") { return .scale }
         if has("acpartner", "aircondition", ".ac.", "airc") { return .ac }
         if has("vacuum", "roborock", "sweeper", ".robot.") { return .vacuum }
         if has("humidifier", "jsq") && !has("dehumid", "derh") { return .humidifier }

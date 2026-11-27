@@ -1001,6 +1001,34 @@ struct KettleArt: View {
     }
 }
 
+struct ScaleArt: View {
+    let on: Bool, tint: Color
+    var reading: String? = nil
+    var body: some View {
+        PowerTimeline(on: on) { _, power in
+            ZStack {
+                Ambient(tint, power * 0.3, width: 180, height: 80).position(x: 100, y: 90)
+                ForEach(0..<4) { index in
+                    RoundedRectangle(cornerRadius: 3).fill(aluminum).frame(width: 17, height: 10)
+                        .position(x: index % 2 == 0 ? 39 : 161, y: index < 2 ? 44 : 112)
+                }
+                RoundedRectangle(cornerRadius: 14, style: .continuous).fill(aluminum)
+                    .frame(width: 158, height: 65).position(x: 100, y: 81)
+                RoundedRectangle(cornerRadius: 14, style: .continuous).appliance(tint, power)
+                    .frame(width: 158, height: 59).position(x: 100, y: 74)
+                ForEach(0..<4) { index in
+                    RoundedRectangle(cornerRadius: 5).fill(aluminum.opacity(0.5)).frame(width: 23, height: 12)
+                        .position(x: index % 2 == 0 ? 44 : 156, y: index < 2 ? 59 : 89)
+                }
+                RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.8))
+                    .frame(width: 68, height: 25).position(x: 100, y: 68)
+                Text(reading.map { $0 + " kg" } ?? "— kg").font(.system(size: 13, weight: .medium, design: .monospaced)).monospacedDigit()
+                    .foregroundStyle(tint).opacity(power).position(x: 100, y: 68)
+            }.frame(width: 200, height: 136)
+        }
+    }
+}
+
 struct AirMonitorArt: View {
     let on: Bool, tint: Color
     var reading: String? = nil

@@ -67,6 +67,7 @@ extension DeviceCategory {
         case .purifier: return "drop"
         case .waterDispenser: return "waterbottle"
         case .airMonitor: return "aqi.medium"
+        case .scale: return "scalemass"
         case .other: return "square.grid.2x2"
         case .airPurifier: return "air.purifier"
         case .curtain: return "curtains.closed"
@@ -98,6 +99,7 @@ extension DeviceCategory {
         case .purifier: return .blue
         case .waterDispenser: return Color(red: 0.20, green: 0.58, blue: 0.72)
         case .airMonitor: return Color(red: 0.32, green: 0.64, blue: 0.48)
+        case .scale: return Color(red: 0.42, green: 0.48, blue: 0.58)
         case .other: return .indigo
         case .airPurifier: return .cyan
         case .curtain: return .brown

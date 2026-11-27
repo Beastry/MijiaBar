@@ -9,14 +9,87 @@ import MijiaCore
         for (category, row) in [(DeviceCategory.humidifier, "humidifier"), (.vacuum, "vacuum"),
                                 (.fridge, "fridge"), (.washer, "washer"), (.waterHeater, "water-heater"), (.curtain, "curtain"), (.airPurifier, "air-purifier"),
                                 (.heater, "heater"), (.dehumidifier, "dehumidifier"), (.hood, "hood"), (.lock, "lock"), (.airer, "airer"), (.clock, "clock"), (.gateway, "gateway"), (.bathHeater, "bath-heater"),
-                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier"), (.waterDispenser, "water-dispenser"), (.airMonitor, "air-monitor")] {
+                                (.speaker, "speaker"), (.kitchen, "cooker"), (.kitchen, "kettle"), (.kitchen, "dishwasher"), (.kitchen, "juicer"), (.kitchen, "ihcooker"), (.purifier, "purifier"), (.waterDispenser, "water-dispenser"), (.airMonitor, "air-monitor"), (.scale, "scale")] {
             let device = try #require(model.devices.first { $0.category == category })
             #expect(device.homeId == (category == .dehumidifier ? "h1" : "h2"))
             #expect(model.states[device.did]?.spec != nil)
             #expect(ArtGallery.rows.filter { $0.0 == row }.count == 1)
         }
-        #expect(ArtGallery.rows.count == 41)
+        #expect(ArtGallery.rows.count == 42)
         #expect(ArtGallery.size.height == CGFloat(ArtGallery.rows.count * 138))
+    }
+
+    @Test func scaleDemoRoutingAndProps() throws {
+        let model = AppModel(mock: true)
+        var device = try #require(model.devices.first { $0.did == "d44" })
+        let state = try #require(model.states[device.did])
+        #expect(device.category == .scale && device.category.rawValue == "scale")
+        #expect(device.model == "yunmai.scales.demo" && device.form == nil)
+        #expect(device.homeId == "h2" && device.roomName == L("浴室", "Bathroom"))
+        #expect(device.icon == "scalemass" && zhCategory(device.category) == L("体重秤", "Scale"))
+        #expect(device.category.color == Color(red: 0.42, green: 0.48, blue: 0.58))
+        #expect(DeviceCategory.allCases.filter { $0 != .scale }.allSatisfy { $0.color != device.category.color })
+        #expect(HouseCatalog.deviceClass(category: .scale) == .badge && HouseChipStyle.tint(.scale) == device.category.color)
+        #expect(state.spec?.type == "urn:miot-spec-v2:device:scale:0" && model.powerInfo(device) == nil)
+        func contains<Value>(_ value: Any, type: Value.Type) -> Bool {
+            if let art = value as? () -> ScaleArt { return contains(art(), type: type) }
+            return value is Value || Mirror(reflecting: value).children.contains { contains($0.value, type: type) }
+        }
+        for online in [true, false] {
+            device.isOnline = online
+            let detail = ScaleDetail(dc: DC(device: device, state: state))
+            #expect(detail.on == online && detail.title == L("最近读数", "Last reading"))
+            #expect(detail.reading?.name == "weight" && detail.dc.num(detail.reading) == 62.4 && detail.readingUnit == "kg")
+            #expect(detail.readout("bmi", "BMI", "") == "BMI 21.6")
+            #expect(detail.readout("body-fat", "Fat", "%") == "Fat 19.8%")
+            #expect(detail.dc.num(detail.dc.p("battery-level")) == 92 && detail.dc.text(detail.unit) == "kg")
+            #expect(detail.settings.map(\.name) == ["unit"] && detail.heartRateDetection == nil)
+            let routed = TypeDetailView(device: device, state: state).body
+            #expect(contains(routed, type: ScaleDetail.self))
+            #expect(!contains(routed, type: DeviceCardView.self) && !contains(routed, type: SensorDetail.self))
+            #expect(contains(detail.body, type: ScaleArt.self))
+            #expect(!contains(detail.body, type: GenericArt.self) && !contains(detail.body, type: ThermoArt.self))
+            let fields = Mirror(reflecting: detail.body).children
+            let art = try #require(fields.first { $0.label == "art" }?.value as? () -> ScaleArt)
+            #expect(art().on == online && art().reading == "62.4" && art().tint == device.category.color)
+            #expect(fields.first { $0.label == "powerOn" }?.value as? Bool == nil)
+            #expect(!(fields.first { $0.label == "onPower" }?.value is () -> Void))
+        }
+        #expect(contains(offArt(device, tint: device.category.color), type: ScaleArt.self))
+    }
+
+    @Test func scaleFallbacksAndOptionalProperties() {
+        var device = Device(did: "demo", name: "Demo", model: "xiaomi.scale.v1", isOnline: true)
+        let spec = DeviceSpec.parse(["services": [["iid": 2, "type": "scale", "properties": [
+            ["iid": 1, "type": "weight", "format": "float", "access": ["read"]],
+            ["iid": 2, "type": "bmi", "format": "float", "access": ["read"]],
+            ["iid": 3, "type": "muscle", "format": "float", "access": ["read"], "unit": "percentage"],
+            ["iid": 4, "type": "heart-rate", "format": "uint8", "access": ["read"]],
+            ["iid": 5, "type": "impedance", "format": "float", "access": ["read"]]
+        ]]]])
+        let state = DeviceState(values: ["2.2": .double(22.1), "2.3": .int(40), "2.4": .int(72), "2.5": .int(510)], spec: spec, legacy: false, source: "cloud")
+        let detail = ScaleDetail(dc: DC(device: device, state: state))
+        #expect(detail.reading?.name == "bmi" && detail.readingUnit == "")
+        #expect(detail.readout("muscle", "Muscle", "%") == "Muscle 40%")
+        #expect(detail.readout("heart-rate", "Heart", " bpm") == "Heart 72 bpm")
+        #expect(detail.readout("impedance", "Impedance", " Ω") == "Impedance 510 Ω")
+        #expect(detail.settings.isEmpty && detail.unit == nil)
+        for online in [true, false] {
+            device.isOnline = online
+            let empty = ScaleDetail(dc: DC(device: device, state: DeviceState(values: [:], spec: nil, legacy: false, source: "cloud")))
+            #expect(empty.reading == nil && empty.settings.isEmpty && empty.on == online)
+            #expect(empty.title == (online ? L("在线", "Online") : L("离线", "Offline")))
+            #expect(empty.readout("battery-level", "Battery", "%") == nil)
+        }
+        for access in [["read"], ["read", "write"]] {
+            let settingsSpec = DeviceSpec.parse(["services": [["iid": 2, "type": "scale", "properties": [
+                ["iid": 1, "type": "heart-rate-detection", "format": "bool", "access": access],
+                ["iid": 2, "type": "unit", "format": "uint8", "access": access]
+            ]]]])
+            let settings = ScaleDetail(dc: DC(device: device, state: DeviceState(values: [:], spec: settingsSpec, legacy: false, source: "cloud")))
+            #expect(settings.heartRateDetection?.key == "2.1" && settings.unit?.key == "2.2")
+            #expect(settings.settings.map(\.name) == (access.contains("write") ? ["heart-rate-detection"] : []))
+        }
     }
 
     @Test func airMonitorDemoRoutingAndProps() throws {

@@ -14,6 +14,19 @@ PAL = {
     "G": (108, 192, 112), "c": (127, 224, 224), "n": (138, 90, 59),
 }
 SPRITES = {
+    "scale": """
+............
+............
+............
+..kkkkkkkk..
+.kwwkkwwwwk.
+.kwwkbbkwwk.
+.kwwkkkkwwk.
+.kwwwwwwwwk.
+.kssssssssk.
+..kkkkkkkk..
+..kd....dk..
+............""",
     "air-monitor": """
 ............
 ...kkkkkk...

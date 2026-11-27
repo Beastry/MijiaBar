@@ -40,6 +40,7 @@ struct TypeDetailView: View {
         case .purifier: PurifierDetail(dc: dc)
         case .waterDispenser: WaterDispenserDetail(dc: dc)
         case .airMonitor: AirMonitorDetail(dc: dc)
+        case .scale: ScaleDetail(dc: dc)
         case .heater: HeaterDetail(dc: dc)
         case .dehumidifier: DehumidifierDetail(dc: dc)
         case .sensor: SensorDetail(dc: dc)
@@ -118,6 +119,7 @@ struct DeviceStatusCard: View {
     case .purifier: PurifierArt(on: false, filter: nil, tint: tint)
     case .waterDispenser: WaterDispenserArt(on: false, tint: tint)
     case .airMonitor: AirMonitorArt(on: false, tint: tint)
+    case .scale: ScaleArt(on: false, tint: tint)
     case .heater: HeaterArt(on: false, level: 0.3, tint: tint)
     case .dehumidifier: DehumidifierArt(on: false, level: 0.3, tint: tint)
     case .humidifier: HumidifierArt(on: false, tint: tint)
@@ -654,6 +656,43 @@ struct KettleDetail: View {
 }
 
 // MARK: 空气检测仪
+struct ScaleDetail: View {
+    let dc: DC
+    var weight: SpecProperty? { dc.p("weight") }
+    var reading: SpecProperty? { [weight, dc.p("bmi")].compactMap { $0 }.first { dc.num($0) != nil } }
+    var on: Bool { dc.device.isOnline }
+    var title: String { reading != nil ? L("最近读数", "Last reading") : on ? L("在线", "Online") : L("离线", "Offline") }
+    var readingUnit: String { reading?.name == "weight" ? "kg" : "" }
+    var unit: SpecProperty? { dc.p("unit") }
+    var heartRateDetection: SpecProperty? { dc.p("heart-rate-detection") }
+    var settings: [SpecProperty] {
+        [unit, heartRateDetection].compactMap { $0 }.filter { $0.writable && ($0.format == "bool" || !($0.options ?? []).isEmpty) }
+    }
+    func readout(_ name: String, _ label: String, _ unit: String) -> String? {
+        dc.num(dc.p(name)).map { label + " " + fmt1($0) + unit }
+    }
+    var body: some View {
+        let device = dc.device, tint = device.category.color
+        TypeShell(device: device, tint: tint, isOn: on, title: title, subtitle: L("体重秤", "Scale")) {
+            ScaleArt(on: on, tint: tint, reading: dc.num(weight).map { fmt1($0) })
+        } content: {
+            BigValue(value: dc.num(reading).map { fmt1($0) }, unit: readingUnit,
+                     caption: reading?.name == "bmi" ? "BMI" : L("体重", "Weight"), dim: !on)
+            ReadoutRow(items: [("scalemass", readout("bmi", "BMI", "")),
+                               ("percent", readout("body-fat", L("体脂", "Body fat"), "%")),
+                               ("figure.stand", readout("muscle", L("肌肉", "Muscle"), dc.p("muscle").map { " " + unitText($0) } ?? ""))], tint: tint)
+            ReadoutRow(items: [("heart", readout("heart-rate", L("心率", "Heart rate"), " bpm")),
+                               ("waveform.path", readout("impedance", L("阻抗", "Impedance"), " Ω")),
+                               ("battery.75percent", readout("battery-level", L("电量", "Battery"), "%"))], tint: tint)
+            ReadoutRow(items: [("ruler", dc.text(unit).map { L("单位", "Unit") + " " + $0 })], tint: tint)
+            ForEach(settings, id: \.key) { prop in
+                PropTile(dc: dc, prop: prop, title: prop.name == "unit" ? L("单位", "Unit") : L("心率检测", "Heart-rate detection"),
+                         icon: prop.name == "unit" ? "ruler" : "heart", tint: tint)
+            }
+        }
+    }
+}
+
 struct AirMonitorDetail: View {
     let dc: DC
     var reading: SpecProperty? { dc.p("pm2.5-density") ?? dc.p("co2-density") ?? dc.p("air-quality-index") ?? dc.p("air-quality") ?? dc.p("temperature") }
